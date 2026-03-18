@@ -1,0 +1,30 @@
+# Render Blueprint – Backend (FastAPI) + Web (Next.js)
+# https://render.com/docs/blueprint-spec
+#
+# Si le backend est déjà déployé séparément, tu peux supprimer le bloc
+# schola-api ci‑dessous et garder seulement schola-web.
+
+services:
+  # Backend API
+  - type: web
+    name: schola-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: ./start.sh
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.3"
+
+  # Frontend Next.js
+  - type: web
+    name: schola-web
+    runtime: node
+    rootDir: web
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: NEXT_PUBLIC_API_URL
+        value: https://schola-api.onrender.com

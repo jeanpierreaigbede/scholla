@@ -39,7 +39,11 @@ class Settings(BaseSettings):
     REDIS_URL: str | None = None
 
     # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://schola.onrender.com",
+    ]
 
     # Brevo HTTP API (transactional emails)
     BREVO_API_KEY: str = ""
