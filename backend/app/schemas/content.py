@@ -88,3 +88,109 @@ class NextTopicOut(BaseModel):
     lesson_title: str
     estimated_minutes_left: int
     difficulty: str = "Intermediate"
+
+
+# ----- Concepts -----
+class ConceptOut(BaseModel):
+    id: UUID
+    lesson_id: UUID
+    title: str
+    content: str
+    order_index: int
+
+    class Config:
+        from_attributes = True
+
+
+class ConceptCreate(BaseModel):
+    lesson_id: UUID
+    title: str
+    content: str
+    order_index: int = 0
+
+
+# ----- Exercises -----
+class ExerciseOut(BaseModel):
+    id: UUID
+    lesson_id: UUID
+    title: str | None
+    statement: str
+    solution: str | None
+    order_index: int
+
+    class Config:
+        from_attributes = True
+
+
+class ExerciseCreate(BaseModel):
+    lesson_id: UUID
+    title: str | None = None
+    statement: str
+    solution: str | None = None
+    order_index: int = 0
+
+
+# ----- Past exams -----
+class PastExamOut(BaseModel):
+    id: UUID
+    subject_id: UUID
+    title: str
+    year: int | None
+    order_index: int
+
+    class Config:
+        from_attributes = True
+
+
+class PastExamCreate(BaseModel):
+    subject_id: UUID
+    title: str
+    year: int | None = None
+    order_index: int = 0
+
+
+class PastExamQuestionOut(BaseModel):
+    """Question sans bonne réponse ni explication (affichée avant soumission)."""
+    id: UUID
+    past_exam_id: UUID
+    question_text: str
+    option_a: str
+    option_b: str
+    option_c: str | None
+    option_d: str | None
+    order_index: int
+
+    class Config:
+        from_attributes = True
+
+
+class PastExamQuestionWithAnswerOut(PastExamQuestionOut):
+    correct_option: str
+    explanation: str | None
+
+
+class PastExamSubmitAnswer(BaseModel):
+    question_id: UUID
+    selected_option: str
+
+
+class SubmitPastExamBody(BaseModel):
+    answers: list[PastExamSubmitAnswer]
+
+
+class PastExamResultOut(BaseModel):
+    attempt_id: UUID
+    score_percent: float
+    total_questions: int
+    correct_count: int
+    feedback: list[dict]
+
+
+class PastExamAttemptOut(BaseModel):
+    id: UUID
+    past_exam_id: UUID
+    score_percent: float
+    completed_at: str
+
+    class Config:
+        from_attributes = True

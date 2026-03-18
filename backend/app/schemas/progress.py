@@ -22,3 +22,13 @@ class DashboardProgressOut(BaseModel):
     english_percent: int
     daily_streak_days: int
     today_goal_minutes: int
+
+
+class SubjectProgressOut(BaseModel):
+    """Progression pour un cours : leçons complétées + past exams passés."""
+    subject_id: UUID
+    lessons_completed: int
+    lessons_total: int
+    past_exams_completed: int
+    past_exams_total: int
+    progress_percent: float  # 0-100, agrégé leçons + exams

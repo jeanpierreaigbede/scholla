@@ -7,8 +7,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.base import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
-from app.models.content import Module, Lesson, UserProgress, Subject
-from app.schemas.progress import DashboardProgressOut, LessonCompletionOut
+from app.models.content import (
+    Module,
+    Lesson,
+    UserProgress,
+    Subject,
+    PastExam,
+    PastExamAttempt,
+)
+from app.schemas.progress import (
+    DashboardProgressOut,
+    LessonCompletionOut,
+    SubjectProgressOut,
+)
 from app.schemas.content import NextTopicOut
 
 router = APIRouter()
@@ -96,6 +107,78 @@ async def complete_lesson(
     await db.flush()
     await db.refresh(progress)
     return LessonCompletionOut.model_validate(progress)
+
+
+@router.get("/subjects/{subject_id}", response_model=SubjectProgressOut)
+async def get_subject_progress(
+    subject_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Progression du cours : leçons complétées + past exams passés."""
+    # Total leçons dans ce subject (via modules)
+    modules_result = await db.execute(
+        select(Module.id).where(Module.subject_id == subject_id)
+    )
+    module_ids = [r[0] for r in modules_result.all()]
+    if not module_ids:
+        lessons_total = 0
+        past_exams_total = 0
+    else:
+        from sqlalchemy import func
+        lessons_total_result = await db.execute(
+            select(func.count(Lesson.id)).where(Lesson.module_id.in_(module_ids))
+        )
+        lessons_total = lessons_total_result.scalar() or 0
+        past_exams_total_result = await db.execute(
+            select(func.count(PastExam.id)).where(PastExam.subject_id == subject_id)
+        )
+        past_exams_total = past_exams_total_result.scalar() or 0
+
+    # Leçons complétées par l'utilisateur dans ces modules
+    if module_ids:
+        done_lessons_result = await db.execute(
+            select(Lesson.id)
+            .where(Lesson.module_id.in_(module_ids))
+            .where(
+                Lesson.id.in_(
+                    select(UserProgress.lesson_id).where(
+                        UserProgress.user_id == current_user.id,
+                        UserProgress.completed_at.isnot(None),
+                    )
+                )
+            )
+        )
+        lessons_completed = len(done_lessons_result.all())
+    else:
+        lessons_completed = 0
+
+    # Past exams passés par l'utilisateur pour ce subject
+    exams_done_result = await db.execute(
+        select(func.count(PastExamAttempt.id))
+        .where(
+            PastExamAttempt.user_id == current_user.id,
+            PastExamAttempt.past_exam_id.in_(
+                select(PastExam.id).where(PastExam.subject_id == subject_id)
+            ),
+        )
+    )
+    past_exams_completed = exams_done_result.scalar() or 0
+
+    # Progression agrégée : moyenne pondérée (50% leçons, 50% exams) ou simple
+    total_activities = lessons_total + past_exams_total
+    completed_activities = lessons_completed + past_exams_completed
+    progress_percent = (
+        round(100 * completed_activities / total_activities, 1) if total_activities else 0.0
+    )
+    return SubjectProgressOut(
+        subject_id=subject_id,
+        lessons_completed=lessons_completed,
+        lessons_total=lessons_total,
+        past_exams_completed=past_exams_completed,
+        past_exams_total=past_exams_total,
+        progress_percent=progress_percent,
+    )
 
 
 @router.delete("/completions/{progress_id}", status_code=204)
