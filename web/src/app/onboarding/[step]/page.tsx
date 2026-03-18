@@ -28,9 +28,10 @@ export default function OnboardingStepPage() {
       <header className="mb-4 flex items-center justify-between">
         <Link
           href={step === 1 ? "/otp" : "/onboarding/1"}
-          className="text-sm text-[var(--primary)]"
+          className="text-sm text-[var(--primary)] hover:underline"
+          aria-label={step === 1 ? "Back to verification" : "Back to previous step"}
         >
-          ←
+          ← Back
         </Link>
         <span className="text-sm font-semibold text-[var(--primary)]">
           Schola

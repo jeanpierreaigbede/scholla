@@ -79,8 +79,8 @@ function OTPForm() {
 
       <div className="relative px-6 pt-6 pb-8">
         <header className="mb-6 flex items-center">
-          <Link href="/signup" className="text-sm text-[var(--primary)]">
-            ←
+          <Link href="/signup" className="text-sm text-[var(--primary)] hover:underline" aria-label="Back to signup">
+            ← Back
           </Link>
           <div className="mx-auto text-sm font-semibold text-[var(--primary)]">
             Schola

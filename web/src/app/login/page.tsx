@@ -11,6 +11,7 @@ export default function LoginPage() {
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -29,56 +30,68 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] px-6 py-8">
-      <Link href="/" className="inline-block text-[var(--primary)] mb-6">
-        ← Back
-      </Link>
-      <h1 className="text-2xl font-bold text-[var(--foreground)]">Log In</h1>
-      <p className="mt-2 text-[var(--muted-foreground)]">
-        Welcome back. Sign in to continue.
-      </p>
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-[var(--background)] px-4 py-8 sm:px-6">
+      <div className="w-full max-w-sm">
+        <h1 className="text-2xl font-bold text-[var(--foreground)]">Log in</h1>
+        <p className="mt-2 text-sm text-[var(--muted-foreground)]">
+          Welcome back. Sign in to continue.
+        </p>
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
-            Email
-          </label>
-          <input
-            type="email"
-            required
-            placeholder="example@email.com"
-            className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3"
-            value={form.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
-            Password
-          </label>
-          <input
-            type="password"
-            required
-            className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3"
-            value={form.password}
-            onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-          />
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-xl bg-[var(--primary)] py-4 font-semibold text-white disabled:opacity-50"
-        >
-          {loading ? "Signing in…" : "Log In"}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
+              Email
+            </label>
+            <input
+              type="email"
+              required
+              placeholder="example@email.com"
+              className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3"
+              value={form.email}
+              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 pr-16"
+                value={form.password}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, password: e.target.value }))
+                }
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg px-3 py-1 text-[11px] font-semibold text-[var(--primary)] hover:opacity-90"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-xl bg-[var(--primary)] py-3.5 font-semibold text-white disabled:opacity-50"
+          >
+            {loading ? "Signing in…" : "Log in"}
+          </button>
+        </form>
 
-      <p className="mt-6 text-center text-[var(--muted-foreground)]">
-        Don&apos;t have an account?{" "}
-        <Link href="/signup" className="font-semibold text-[var(--primary)]">
-          Sign Up
-        </Link>
-      </p>
+        <p className="mt-6 text-center text-sm text-[var(--muted-foreground)]">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="font-semibold text-[var(--primary)] hover:underline">
+            Create account
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
