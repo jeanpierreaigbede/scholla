@@ -1,6 +1,16 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 const API_ENABLED = !!API_BASE;
 
+/** Message d'erreur lisible pour l'utilisateur (évite "Failed to fetch" brut). */
+export function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) {
+    if (err.message === "Failed to fetch" || err.message.includes("Load failed"))
+      return "Connexion impossible. Vérifiez votre réseau.";
+    return err.message;
+  }
+  return "Une erreur est survenue.";
+}
+
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("schola_token");
@@ -82,6 +92,14 @@ export const authApi = {
           access_token: "mock-token",
           token_type: "bearer",
         }),
+
+  resendOtp: (data: { email: string }) =>
+    API_ENABLED
+      ? api<{ message: string }>("/auth/resend-otp", {
+          method: "POST",
+          body: JSON.stringify(data),
+        })
+      : Promise.resolve({ message: "OK" }),
 
   login: (data: { email: string; password: string }) =>
     API_ENABLED

@@ -4,9 +4,9 @@ import Link from "next/link";
 
 export default function DashboardPage() {
   return (
-    <div className="flex h-full flex-col bg-[var(--background)]">
+    <div className="flex h-full min-h-0 flex-col bg-[var(--background)]">
       {/* Header */}
-      <header className="flex items-center justify-between px-5 pt-4 pb-3">
+      <header className="flex shrink-0 items-center justify-between px-5 pt-4 pb-3">
         <div>
           <p className="text-[11px] text-[var(--muted-foreground)]">
             Good morning,
@@ -23,8 +23,8 @@ export default function DashboardPage() {
         </Link>
       </header>
 
-      {/* Content scrollable */}
-      <main className="flex-1 overflow-y-auto px-5 pb-3 space-y-5">
+      {/* Content scrollable (molette / touch pour scroll normal) */}
+      <main className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 pb-3 space-y-5 overscroll-y-auto">
         {/* Exam Readiness card */}
         <section className="rounded-2xl bg-[var(--primary)] p-4 text-white shadow-md">
           <div className="flex items-start justify-between">
@@ -149,8 +149,8 @@ export default function DashboardPage() {
         </section>
       </main>
 
-      {/* Bottom nav strictly mobile-width (inside layout frame) */}
-      <nav className="flex h-14 border-t border-[var(--border)] bg-[var(--primary)] text-[11px] text-white">
+      {/* Bottom nav */}
+      <nav className="flex shrink-0 h-14 border-t border-[var(--border)] bg-[var(--primary)] text-[11px] text-white">
         <Link
           href="/dashboard"
           className="flex flex-1 flex-col items-center justify-center gap-0.5 font-medium"

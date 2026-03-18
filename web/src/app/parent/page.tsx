@@ -2,19 +2,24 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api } from "@/lib/api";
+import { api, getErrorMessage } from "@/lib/api";
+import { useToast } from "@/components/Toast";
 
 type Child = { id: number; full_name: string; email: string; school_name: string | null };
 
 export default function ParentPortalPage() {
+  const { addToast } = useToast();
   const [children, setChildren] = useState<Child[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     api<{ children: Child[] }>("/parent/children")
-      .then((r) => setChildren(r.children))
-      .catch((e) => setError(e instanceof Error ? e.message : "Unauthorized"))
+      .then((r) => setChildren(r.children ?? []))
+      .catch((e) => {
+        setError(true);
+        addToast(getErrorMessage(e));
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -28,11 +33,10 @@ export default function ParentPortalPage() {
   if (error) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6">
-        <p className="text-red-600">{error}</p>
         <p className="text-sm text-[var(--muted-foreground)]">
-          Log in with a parent account to view the portal. Parents can link to student accounts via the API.
+          Connectez-vous avec un compte parent pour accéder au portail.
         </p>
-        <Link href="/login" className="text-[var(--primary)]">Go to Login</Link>
+        <Link href="/login" className="text-[var(--primary)]">Aller à la connexion</Link>
       </div>
     );
   }

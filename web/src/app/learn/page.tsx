@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api } from "@/lib/api";
+import { api, getErrorMessage } from "@/lib/api";
+import { useToast } from "@/components/Toast";
 
 type Subject = { id: number; name: string; slug: string; order_index: number };
 type Module = {
@@ -17,10 +18,11 @@ type Module = {
 };
 
 export default function LearnPage() {
+  const { addToast } = useToast();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [modulesBySubject, setModulesBySubject] = useState<Record<number, Module[]>>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -32,7 +34,8 @@ export default function LearnPage() {
           setModulesBySubject((prev) => ({ ...prev, [s.id]: mods }));
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load");
+        setError(true);
+        addToast(getErrorMessage(e));
       } finally {
         setLoading(false);
       }
@@ -50,9 +53,8 @@ export default function LearnPage() {
   if (error) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6">
-        <p className="text-red-600">{error}</p>
         <p className="text-sm text-[var(--muted-foreground)]">
-          Make sure you are logged in and the API is running. Showing placeholder.
+          Contenu indisponible. Affichage du placeholder.
         </p>
         <PlaceholderLearn />
         <Link href="/dashboard" className="text-[var(--primary)]">← Dashboard</Link>

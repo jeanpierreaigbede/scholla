@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { authApi, schoolsApi, type School } from "@/lib/api";
+import { authApi, schoolsApi, type School, getErrorMessage } from "@/lib/api";
+import { useToast } from "@/components/Toast";
 
 export default function SignupPage() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [schools, setSchools] = useState<School[]>([]);
   const [schoolsLoading, setSchoolsLoading] = useState(true);
   const [schoolsError, setSchoolsError] = useState("");
@@ -44,7 +45,6 @@ export default function SignupPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
     setLoading(true);
     try {
       await authApi.signup({
@@ -55,7 +55,7 @@ export default function SignupPage() {
       });
       router.push(`/otp?email=${encodeURIComponent(form.email)}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Signup failed");
+      addToast(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -82,9 +82,6 @@ export default function SignupPage() {
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-        {error && (
-          <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
-        )}
         <div>
           <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
             Full Name

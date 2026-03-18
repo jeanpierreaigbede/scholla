@@ -3,17 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { authApi } from "@/lib/api";
+import { authApi, getErrorMessage } from "@/lib/api";
+import { useToast } from "@/components/Toast";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [form, setForm] = useState({ email: "", password: "" });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
     setLoading(true);
     try {
       const { access_token } = await authApi.login(form);
@@ -22,7 +22,7 @@ export default function LoginPage() {
       }
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      addToast(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -39,9 +39,6 @@ export default function LoginPage() {
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-        {error && (
-          <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>
-        )}
         <div>
           <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
             Email

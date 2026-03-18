@@ -1,9 +1,18 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authApi } from "@/lib/api";
+import { useToast } from "@/components/Toast";
+
+const RESEND_COOLDOWN_SEC = 60; // 1 minute, aligné avec le backend
+
+function formatCountdown(sec: number) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
 function OTPForm() {
   const router = useRouter();
@@ -11,9 +20,10 @@ function OTPForm() {
   const email = searchParams.get("email") || "";
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(RESEND_COOLDOWN_SEC);
   const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     if (!email) router.replace("/signup");
@@ -26,10 +36,26 @@ function OTPForm() {
     }
   }, [email]);
 
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
+  const handleResend = useCallback(async () => {
+    if (resendCooldown > 0) return;
+    try {
+      await authApi.resendOtp({ email });
+      setResendCooldown(RESEND_COOLDOWN_SEC);
+      addToast("Un nouveau code a été envoyé à votre email.", "success");
+    } catch {
+      addToast("Impossible d’envoyer un nouveau code. Réessayez plus tard.");
+    }
+  }, [email, resendCooldown, addToast]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!email) return;
-    setError("");
     setLoading(true);
     try {
       const { access_token } = await authApi.verifyOtp({ email, code });
@@ -38,7 +64,7 @@ function OTPForm() {
       }
       router.push("/onboarding/1");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Invalid or expired OTP");
+      addToast(err instanceof Error ? err.message : "Code invalide ou expiré.");
     } finally {
       setLoading(false);
     }
@@ -47,7 +73,7 @@ function OTPForm() {
   if (!email) return null;
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[var(--background)] px-0 pt-0 pb-0">
+    <div className="relative min-h-screen bg-[var(--background)] px-0 pt-0 pb-0">
       {/* Top soft gradient like Figma */}
       <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-[#e0f2ff] via-[#eef7ff] to-transparent" />
 
@@ -71,12 +97,6 @@ function OTPForm() {
         <p className="mt-2 text-sm leading-relaxed text-[var(--muted-foreground)]">
           We&apos;ve sent a 6-digit code to your email/phone. Please enter it below to proceed.
         </p>
-
-        {error && (
-          <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-            {error}
-          </p>
-        )}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-6">
           {/* Hidden real input, we display 6 boxes bound to `code` */}
@@ -127,10 +147,15 @@ function OTPForm() {
           </button>
 
           <div className="mt-2 text-center text-xs text-[var(--muted-foreground)]">
-            <p>Didn&apos;t receive the code?</p>
-            <p className="mt-1">
-              Resend Code <span className="font-semibold">00:60</span>
-            </p>
+            <p>Vous n&apos;avez pas reçu le code ?</p>
+            <button
+              type="button"
+              onClick={handleResend}
+              disabled={resendCooldown > 0}
+              className="mt-1 font-semibold text-[var(--primary)] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Renvoyer le code {resendCooldown > 0 ? `(${formatCountdown(resendCooldown)})` : ""}
+            </button>
           </div>
         </form>
       </div>

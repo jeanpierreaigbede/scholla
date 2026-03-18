@@ -32,6 +32,15 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+/* Masque la scrollbar tout en gardant le scroll (mobile + desktop). */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE/Edge legacy */
+  scrollbar-width: none; /* Firefox */
+}
+
 .btn-primary {
   background: var(--primary);
   color: var(--primary-foreground);
