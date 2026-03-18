@@ -35,12 +35,20 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-slate-900`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-zinc-800`}
       >
-        <div className="flex min-h-screen items-center justify-center">
-          {/* Mobile frame to match Figma (approx. 395x885) */}
-          <div className="relative flex h-[885px] w-full max-w-[395px] flex-col overflow-hidden rounded-3xl bg-[var(--background)] shadow-2xl">
-            {children}
+        <div className="flex min-h-screen items-center justify-center p-6">
+          {/* Phone mock: bezel + screen (realistic mobile device in browser) */}
+          <div className="relative flex flex-col items-center">
+            {/* Top notch / dynamic island style */}
+            <div className="absolute top-0 z-10 h-6 w-32 rounded-b-2xl bg-zinc-900" />
+            {/* Phone bezel (chassis) - taille type téléphone (375x720), pas tablette */}
+            <div className="flex flex-col rounded-[2.5rem] border-[10px] border-zinc-900 bg-zinc-900 p-2 shadow-2xl ring-2 ring-zinc-700">
+              {/* Zone écran : pas de scroll, tout doit tenir dans la hauteur */}
+              <div className="relative flex h-[min(720px,80dvh)] w-[min(375px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[1.75rem] bg-[var(--background)] [&>*]:min-h-0">
+                {children}
+              </div>
+            </div>
           </div>
         </div>
       </body>

@@ -1,20 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { authApi } from "@/lib/api";
+import { authApi, schoolsApi, type School } from "@/lib/api";
 
 export default function SignupPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [schools, setSchools] = useState<School[]>([]);
+  const [schoolsLoading, setSchoolsLoading] = useState(true);
+  const [schoolsError, setSchoolsError] = useState("");
   const [form, setForm] = useState({
     full_name: "",
     email: "",
-    school_name: "",
+    school_id: "",
     password: "",
   });
+
+  useEffect(() => {
+    setSchoolsLoading(true);
+    setSchoolsError("");
+    schoolsApi
+      .list()
+      .then((list) => {
+        const arr = Array.isArray(list) ? list : [];
+        setSchools(arr);
+        if (arr.length === 0 && !process.env.NEXT_PUBLIC_API_URL) {
+          setSchoolsError("Configurez NEXT_PUBLIC_API_URL (ex. .env.local) pour charger les écoles.");
+        }
+      })
+      .catch(() => {
+        setSchools([]);
+        setSchoolsError(
+          process.env.NEXT_PUBLIC_API_URL
+            ? "Impossible de charger la liste des écoles (vérifiez CORS et l’URL de l’API)."
+            : "Configurez NEXT_PUBLIC_API_URL (ex. .env.local) pour charger les écoles."
+        );
+      })
+      .finally(() => setSchoolsLoading(false));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,7 +50,7 @@ export default function SignupPage() {
       await authApi.signup({
         full_name: form.full_name,
         email: form.email,
-        school_name: form.school_name || undefined,
+        school_id: form.school_id || undefined,
         password: form.password,
       });
       router.push(`/otp?email=${encodeURIComponent(form.email)}`);
@@ -79,6 +105,7 @@ export default function SignupPage() {
           <input
             type="email"
             required
+            autoComplete="off"
             placeholder="example@email.com"
             className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3"
             value={form.email}
@@ -87,15 +114,31 @@ export default function SignupPage() {
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
-            School Name
+            École
           </label>
-          <input
-            type="text"
-            placeholder="Your school or institution"
-            className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3"
-            value={form.school_name}
-            onChange={(e) => setForm((f) => ({ ...f, school_name: e.target.value }))}
-          />
+          <select
+            className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3 text-[var(--foreground)]"
+            value={form.school_id}
+            onChange={(e) => setForm((f) => ({ ...f, school_id: e.target.value }))}
+            disabled={schoolsLoading}
+          >
+            <option value="">
+              {schoolsLoading
+                ? "Chargement…"
+                : schoolsError
+                  ? "Aucune école (vérifiez l’API)"
+                  : "Choisir une école…"}
+            </option>
+            {schools.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+                {s.city ? ` (${s.city})` : ""}
+              </option>
+            ))}
+          </select>
+          {schoolsError && (
+            <p className="mt-1 text-xs text-amber-600">{schoolsError}</p>
+          )}
         </div>
         <div>
           <label className="mb-1 block text-sm font-medium text-[var(--foreground)]">
@@ -105,6 +148,7 @@ export default function SignupPage() {
             type="password"
             required
             minLength={6}
+            autoComplete="new-password"
             placeholder="Create a strong password"
             className="w-full rounded-xl border border-[var(--border)] bg-white px-4 py-3"
             value={form.password}

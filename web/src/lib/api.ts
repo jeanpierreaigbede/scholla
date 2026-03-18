@@ -34,20 +34,40 @@ export async function api<T>(
   return res.json() as Promise<T>;
 }
 
+export type School = {
+  id: string;
+  name: string;
+  address?: string | null;
+  picture_url?: string | null;
+  city?: string | null;
+  region?: string | null;
+  country?: string | null;
+  phone?: string | null;
+  website_url?: string | null;
+};
+
+export const schoolsApi = {
+  list: () =>
+    API_ENABLED
+      ? api<School[]>("/schools")
+      : Promise.resolve([]),
+};
+
 export const authApi = {
   signup: (data: {
     email: string;
     password: string;
     full_name: string;
     school_name?: string;
+    school_id?: string;
   }) =>
     API_ENABLED
-      ? api<{ user_id: number; email: string; message: string }>("/auth/signup", {
+      ? api<{ user_id: string; email: string; message: string }>("/auth/signup", {
           method: "POST",
           body: JSON.stringify(data),
         })
       : Promise.resolve({
-          user_id: 1,
+          user_id: "1",
           email: data.email,
           message: "Mock signup (UI-only mode)",
         }),

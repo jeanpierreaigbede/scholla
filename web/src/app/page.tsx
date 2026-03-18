@@ -2,9 +2,9 @@ import Link from "next/link";
 
 export default function WelcomePage() {
   return (
-    <div className="flex min-h-screen flex-col bg-[var(--background)] px-6 pt-6 pb-8">
+    <div className="flex h-full min-h-0 flex-col bg-[var(--background)] px-6 pt-6 pb-6">
       {/* Header logo */}
-      <header className="flex items-center gap-3">
+      <header className="flex shrink-0 items-center gap-3">
         <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--muted)]">
           <span className="text-lg text-[var(--primary)]">🎓</span>
         </div>
@@ -12,28 +12,24 @@ export default function WelcomePage() {
       </header>
 
       {/* Illustration */}
-      <main className="mt-6 flex flex-1 flex-col items-center">
-        <div className="mb-7 h-48 w-full max-w-[330px] rounded-[24px] bg-[var(--muted)]" />
+      <main className="mt-4 flex min-h-0 flex-1 flex-col items-center">
+        <div className="mb-4 h-36 w-full max-w-[330px] shrink-0 rounded-[24px] bg-[var(--muted)]" />
 
-        {/* Title */}
-        <h1 className="mb-2 text-center text-2xl font-extrabold leading-snug text-[var(--primary)]">
+        <h1 className="mb-1.5 text-center text-2xl font-extrabold leading-snug text-[var(--primary)]">
           Welcome to{" "}
           <span className="text-[var(--accent)]">Schola</span>
         </h1>
 
-        {/* Badge */}
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-[#E5F7EC] px-4 py-1.5 text-[10px] font-semibold text-[#15803d]">
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[#E5F7EC] px-4 py-1.5 text-[10px] font-semibold text-[#15803d]">
           <span>✓</span>
           <span>YOUR PATH TO WASSCE SUCCESS</span>
         </div>
 
-        {/* Subtitle */}
-        <p className="mb-8 max-w-xs text-center text-sm leading-relaxed text-[var(--muted-foreground)]">
+        <p className="mb-6 max-w-xs text-center text-sm leading-relaxed text-[var(--muted-foreground)]">
           Empowering SHS students in Ghana to achieve academic excellence through
           personalized learning.
         </p>
 
-        {/* CTA */}
         <div className="mt-auto w-full flex justify-center">
           <Link
             href="/signup"
@@ -46,7 +42,7 @@ export default function WelcomePage() {
       </main>
 
       {/* Bottom gradient bar */}
-      <footer className="mt-8 h-1 w-full rounded-full bg-gradient-to-r from-[#1e3a5f] via-[#f97316] to-[#22c55e]" />
+      <footer className="mt-4 shrink-0 h-1 w-full rounded-full bg-gradient-to-r from-[#1e3a5f] via-[#f97316] to-[#22c55e]" />
     </div>
   );
 }

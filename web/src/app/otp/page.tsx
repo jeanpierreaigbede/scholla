@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authApi } from "@/lib/api";
@@ -12,10 +12,19 @@ function OTPForm() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!email) router.replace("/signup");
   }, [email, router]);
+
+  useEffect(() => {
+    if (email) {
+      inputRef.current?.focus();
+      setIsFocused(true);
+    }
+  }, [email]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,30 +81,41 @@ function OTPForm() {
         <form onSubmit={handleSubmit} className="mt-6 space-y-6">
           {/* Hidden real input, we display 6 boxes bound to `code` */}
           <input
+            ref={inputRef}
             type="text"
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
             value={code}
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             className="sr-only"
+            aria-label="Code de vérification à 6 chiffres"
           />
 
           <div
             className="flex justify-between gap-2"
             onClick={() => {
-              const el = document.querySelector<HTMLInputElement>("input[type='text'][autoComplete='one-time-code']");
-              el?.focus();
+              inputRef.current?.focus();
             }}
           >
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="flex h-12 w-10 items-center justify-center rounded-lg border border-[var(--border)] bg-white text-lg font-semibold text-[var(--foreground)]"
-              >
-                {code[i] ?? ""}
-              </div>
-            ))}
+            {Array.from({ length: 6 }).map((_, i) => {
+              const activeIndex = Math.min(code.length, 5);
+              const isActive = isFocused && i === activeIndex;
+              return (
+                <div
+                  key={i}
+                  className={`flex h-12 w-10 items-center justify-center rounded-lg border-2 bg-white text-lg font-semibold text-[var(--foreground)] transition-colors ${
+                    isActive
+                      ? "border-[var(--primary)] ring-2 ring-[var(--primary)]/30"
+                      : "border-[var(--border)]"
+                  }`}
+                >
+                  {code[i] ?? ""}
+                </div>
+              );
+            })}
           </div>
 
           <button
