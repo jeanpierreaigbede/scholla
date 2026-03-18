@@ -56,7 +56,7 @@ async def signup(data: SignupRequest, db: AsyncSession = Depends(get_db)):
     otp = OTPCode(
         user_id=user.id,
         code=code,
-        expires_at=datetime.utcnow() + timedelta(minutes=10),
+        expires_at=datetime.utcnow() + timedelta(minutes=1),
     )
     db.add(otp)
     await db.flush()
@@ -79,7 +79,7 @@ async def resend_otp(data: ResendOTPRequest, db: AsyncSession = Depends(get_db))
     otp = OTPCode(
         user_id=user.id,
         code=code,
-        expires_at=datetime.utcnow() + timedelta(minutes=10),
+        expires_at=datetime.utcnow() + timedelta(minutes=1),
     )
     db.add(otp)
     await db.flush()
@@ -117,7 +117,11 @@ async def verify_otp(data: VerifyOTPRequest, db: AsyncSession = Depends(get_db))
 async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == data.email, User.is_active == True))
     user = result.scalar_one_or_none()
-    if not user or not user.hashed_password or not verify_password(data.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+    if not user:
+        raise HTTPException(status_code=404, detail="No account found with this email.")
+    if not user.hashed_password:
+        raise HTTPException(status_code=400, detail="No account found with this email.")
+    if not verify_password(data.password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Incorrect password.")
     token = create_access_token(subject=str(user.id))
     return TokenResponse(access_token=token)

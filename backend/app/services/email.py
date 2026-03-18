@@ -61,6 +61,10 @@ async def send_email(
             to,
             resp.text,
         )
+        if resp.status_code == 401:
+            logger.error(
+                "BREVO_API_KEY invalid or missing. Get a key at https://app.brevo.com/settings/keys/api and set it in Render env vars."
+            )
         raise EmailSendError(
             f"Brevo API error {resp.status_code} while sending email to {to}"
         )
