@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import get_db
 from app.models.user import User, UserRole, OTPCode
+from app.models.school import School
 from app.schemas.auth import (
     SignupRequest,
     SignupResponse,
@@ -29,11 +30,22 @@ async def signup(data: SignupRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == data.email))
     if result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
+
+    school_name = data.school_name
+    school_id = None
+    if data.school_id:
+        school_result = await db.execute(select(School).where(School.id == data.school_id))
+        school = school_result.scalar_one_or_none()
+        if school:
+            school_id = school.id
+            school_name = school.name
+
     user = User(
         email=data.email,
         hashed_password=get_password_hash(data.password),
         full_name=data.full_name,
-        school_name=data.school_name,
+        school_name=school_name,
+        school_id=school_id,
         role=UserRole.STUDENT,
         is_verified=False,
     )

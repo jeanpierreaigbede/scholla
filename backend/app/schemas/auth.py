@@ -8,6 +8,7 @@ class SignupRequest(BaseModel):
     password: str
     full_name: str
     school_name: str | None = None
+    school_id: UUID | None = None
 
 
 class SignupResponse(BaseModel):
