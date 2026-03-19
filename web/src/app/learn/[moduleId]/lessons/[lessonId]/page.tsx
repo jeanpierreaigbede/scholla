@@ -3,27 +3,26 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api } from "@/lib/api";
-
-type Lesson = { id: number; module_id: number; title: string; content: string; order_index: number };
+import { contentApi, progressApi, type Lesson } from "@/lib/api";
+import { ContentWithMath } from "@/components/ContentWithMath";
 
 export default function LessonPage() {
   const params = useParams();
   const router = useRouter();
-  const moduleId = Number(params.moduleId);
-  const lessonId = Number(params.lessonId);
+  const moduleId = params.moduleId as string;
+  const lessonId = params.lessonId as string;
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
 
   useEffect(() => {
-    if (!lessonId || isNaN(lessonId)) {
+    if (!lessonId) {
       router.replace("/learn");
       return;
     }
     async function load() {
       try {
-        const data = await api<Lesson>(`/content/lessons/${lessonId}`);
+        const data = await contentApi.getLesson(lessonId);
         setLesson(data);
       } catch {
         setLesson(null);
@@ -38,7 +37,7 @@ export default function LessonPage() {
     if (!lesson) return;
     setCompleting(true);
     try {
-      await api(`/progress/lessons/${lessonId}/complete`, { method: "POST" });
+      await progressApi.completeLesson(lessonId);
       router.push(`/learn/${moduleId}`);
     } catch {
       setCompleting(false);
@@ -69,8 +68,8 @@ export default function LessonPage() {
         <div className="w-8" />
       </header>
       <main className="p-6">
-        <article className="prose prose-slate max-w-none">
-          <div className="whitespace-pre-wrap text-[var(--foreground)]">{lesson.content}</div>
+        <article className="prose prose-slate max-w-none text-[var(--foreground)]">
+          <ContentWithMath content={lesson.content} />
         </article>
         <div className="mt-8 flex gap-3">
           <button

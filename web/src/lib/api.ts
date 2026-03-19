@@ -133,3 +133,129 @@ export const usersApi = {
           is_verified: true,
         }),
 };
+
+// ----- Content / Learn (subjects, modules, lessons, past exams) -----
+export type Subject = { id: string; name: string; slug: string; order_index: number };
+export type Module = {
+  id: string;
+  subject_id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  order_index: number;
+  estimated_minutes: number;
+  status?: string;
+};
+export type Lesson = {
+  id: string;
+  module_id: string;
+  title: string;
+  content: string;
+  order_index: number;
+};
+export type PastExam = {
+  id: string;
+  subject_id: string;
+  title: string;
+  year: number | null;
+  order_index: number;
+};
+export type PastExamQuestion = {
+  id: string;
+  past_exam_id: string;
+  question_text: string;
+  option_a: string;
+  option_b: string;
+  option_c: string | null;
+  option_d: string | null;
+  order_index: number;
+};
+export type PastExamResult = {
+  attempt_id: string;
+  score_percent: number;
+  total_questions: number;
+  correct_count: number;
+  feedback: Array<{
+    question_id: string;
+    correct: boolean;
+    correct_option: string;
+    explanation: string | null;
+  }>;
+};
+
+const contentBase = "/content";
+export const contentApi = {
+  listSubjects: () =>
+    API_ENABLED ? api<Subject[]>(`${contentBase}/subjects`) : Promise.resolve([]),
+
+  listModules: (subjectId: string) =>
+    API_ENABLED
+      ? api<Module[]>(`${contentBase}/subjects/${subjectId}/modules`)
+      : Promise.resolve([]),
+
+  getModule: (moduleId: string) =>
+    API_ENABLED ? api<Module>(`${contentBase}/modules/${moduleId}`) : Promise.resolve(null as unknown as Module),
+
+  listLessons: (moduleId: string) =>
+    API_ENABLED
+      ? api<Lesson[]>(`${contentBase}/modules/${moduleId}/lessons`)
+      : Promise.resolve([]),
+
+  getLesson: (lessonId: string) =>
+    API_ENABLED ? api<Lesson>(`${contentBase}/lessons/${lessonId}`) : Promise.resolve(null as unknown as Lesson),
+
+  listPastExams: (subjectId: string) =>
+    API_ENABLED
+      ? api<PastExam[]>(`${contentBase}/subjects/${subjectId}/past-exams`).catch(() => [])
+      : Promise.resolve([]),
+
+  getPastExam: (examId: string) =>
+    API_ENABLED ? api<PastExam>(`${contentBase}/past-exams/${examId}`) : Promise.resolve(null as unknown as PastExam),
+
+  getPastExamQuestions: (examId: string) =>
+    API_ENABLED
+      ? api<PastExamQuestion[]>(`${contentBase}/past-exams/${examId}/questions`)
+      : Promise.resolve([]),
+
+  submitPastExam: (examId: string, answers: { question_id: string; selected_option: string }[]) =>
+    API_ENABLED
+      ? api<PastExamResult>(`${contentBase}/past-exams/${examId}/submit`, {
+          method: "POST",
+          body: JSON.stringify({ answers }),
+        })
+      : Promise.resolve(null as unknown as PastExamResult),
+};
+
+// ----- Progress -----
+export type LessonCompletion = {
+  id: string;
+  lesson_id: string;
+  completed_at: string | null;
+  minutes_spent: number;
+};
+export type SubjectProgress = {
+  subject_id: string;
+  lessons_completed: number;
+  lessons_total: number;
+  past_exams_completed: number;
+  past_exams_total: number;
+  progress_percent: number;
+};
+
+const progressBase = "/progress";
+export const progressApi = {
+  getSubjectProgress: (subjectId: string) =>
+    API_ENABLED
+      ? api<SubjectProgress>(`${progressBase}/subjects/${subjectId}`)
+      : Promise.resolve(null as unknown as SubjectProgress),
+
+  completeLesson: (lessonId: string) =>
+    API_ENABLED
+      ? api<LessonCompletion>(`${progressBase}/lessons/${lessonId}/complete`, { method: "POST" })
+      : Promise.resolve(null as unknown as LessonCompletion),
+
+  listCompletions: () =>
+    API_ENABLED
+      ? api<LessonCompletion[]>(`${progressBase}/completions`)
+      : Promise.resolve([]),
+};

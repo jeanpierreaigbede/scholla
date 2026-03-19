@@ -40,10 +40,11 @@ export default function DashboardPage() {
             </Link>
             <Link
               href="/dashboard/settings"
-              className="ml-2 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--muted)] text-[var(--foreground)] hover:bg-[var(--border)]"
-              aria-label="Settings"
+              className="ml-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
+              aria-label="Account"
             >
-              ⚙️
+              <span className="text-lg" aria-hidden>👤</span>
+              <span className="hidden sm:inline">Account</span>
             </Link>
           </nav>
         </div>
@@ -200,8 +201,8 @@ export default function DashboardPage() {
               <span className="text-xs">Stats</span>
             </Link>
             <Link href="/dashboard/settings" className="flex flex-col items-center gap-0.5 text-[var(--muted-foreground)]">
-              <span className="text-lg">⚙️</span>
-              <span className="text-xs">Settings</span>
+              <span className="text-lg">👤</span>
+              <span className="text-xs">Account</span>
             </Link>
           </div>
         </nav>

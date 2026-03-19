@@ -64,3 +64,20 @@ body {
 .btn-accent:hover {
   opacity: 0.9;
 }
+
+/* Contenu Markdown + formules LaTeX (KaTeX) */
+.content-with-math {
+  overflow-x: auto;
+  word-wrap: break-word;
+}
+.content-with-math .katex {
+  font-size: 1.05em;
+}
+.content-with-math .katex-display {
+  margin: 0.75em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+.content-with-math.text-sm .katex {
+  font-size: 0.95em;
+}

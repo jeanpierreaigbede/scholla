@@ -2,36 +2,29 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api, getErrorMessage } from "@/lib/api";
+import { contentApi, getErrorMessage, type Subject, type Module, type PastExam } from "@/lib/api";
 import { useToast } from "@/components/Toast";
-
-type Subject = { id: number; name: string; slug: string; order_index: number };
-type Module = {
-  id: number;
-  subject_id: number;
-  name: string;
-  slug: string;
-  description: string | null;
-  order_index: number;
-  estimated_minutes: number;
-  status?: string;
-};
 
 export default function LearnPage() {
   const { addToast } = useToast();
   const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [modulesBySubject, setModulesBySubject] = useState<Record<number, Module[]>>({});
+  const [modulesBySubject, setModulesBySubject] = useState<Record<string, Module[]>>({});
+  const [pastExamsBySubject, setPastExamsBySubject] = useState<Record<string, PastExam[]>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
-        const subj = await api<Subject[]>("/content/subjects");
+        const subj = await contentApi.listSubjects();
         setSubjects(subj);
         for (const s of subj) {
-          const mods = await api<Module[]>(`/content/subjects/${s.id}/modules`);
+          const [mods, exams] = await Promise.all([
+            contentApi.listModules(s.id),
+            contentApi.listPastExams(s.id),
+          ]);
           setModulesBySubject((prev) => ({ ...prev, [s.id]: mods }));
+          setPastExamsBySubject((prev) => ({ ...prev, [s.id]: exams }));
         }
       } catch (e) {
         setError(true);
@@ -41,7 +34,7 @@ export default function LearnPage() {
       }
     }
     load();
-  }, []);
+  }, [addToast]);
 
   if (loading) {
     return (
@@ -94,6 +87,30 @@ export default function LearnPage() {
                     </li>
                   ))}
                 </ul>
+                {(pastExamsBySubject[s.id]?.length ?? 0) > 0 && (
+                  <div className="mt-4">
+                    <p className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">
+                      Past exams
+                    </p>
+                    <ul className="space-y-2">
+                      {(pastExamsBySubject[s.id] || []).map((exam) => (
+                        <li key={exam.id}>
+                          <Link
+                            href={`/learn/past-exams/${exam.id}`}
+                            className="block rounded-xl border border-[var(--border)] bg-white p-4 text-[var(--primary)]"
+                          >
+                            📝 {exam.title}
+                            {exam.year != null && (
+                              <span className="ml-2 text-sm text-[var(--muted-foreground)]">
+                                ({exam.year})
+                              </span>
+                            )}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </section>
             ))}
           </div>

@@ -3,37 +3,26 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { api } from "@/lib/api";
-
-type Lesson = { id: number; module_id: number; title: string; content: string; order_index: number };
-type Module = {
-  id: number;
-  subject_id: number;
-  name: string;
-  slug: string;
-  description: string | null;
-  order_index: number;
-  estimated_minutes: number;
-};
+import { contentApi, type Lesson, type Module } from "@/lib/api";
 
 export default function ModulePage() {
   const params = useParams();
   const router = useRouter();
-  const moduleId = Number(params.moduleId);
+  const moduleId = params.moduleId as string;
   const [moduleData, setModuleData] = useState<Module | null>(null);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!moduleId || isNaN(moduleId)) {
+    if (!moduleId) {
       router.replace("/learn");
       return;
     }
     async function load() {
       try {
         const [mod, less] = await Promise.all([
-          api<Module>(`/content/modules/${moduleId}`),
-          api<Lesson[]>(`/content/modules/${moduleId}/lessons`),
+          contentApi.getModule(moduleId),
+          contentApi.listLessons(moduleId),
         ]);
         setModuleData(mod);
         setLessons(less);
