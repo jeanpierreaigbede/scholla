@@ -290,12 +290,52 @@ export type SubjectProgress = {
   progress_percent: number;
 };
 
+export type NextTopic = {
+  module_id: string;
+  module_name: string;
+  subject_name: string;
+  lesson_id: string;
+  lesson_title: string;
+  estimated_minutes_left: number;
+  difficulty: string;
+};
+
+export type SubjectProgressItem = {
+  subject_id: string;
+  subject_name: string;
+  progress_percent: number;
+};
+
+export type DashboardProgress = {
+  exam_readiness_percent: number;
+  exam_readiness_delta: number;
+  subject_progress: SubjectProgressItem[];
+  daily_streak_days: number;
+  today_goal_minutes: number;
+};
+
 const progressBase = "/progress";
 export const progressApi = {
+  getDashboard: () =>
+    API_ENABLED
+      ? api<DashboardProgress>(`${progressBase}/dashboard`)
+      : Promise.resolve({
+          exam_readiness_percent: 0,
+          exam_readiness_delta: 0,
+          subject_progress: [],
+          daily_streak_days: 0,
+          today_goal_minutes: 45,
+        }),
+
   getSubjectProgress: (subjectId: string) =>
     API_ENABLED
       ? api<SubjectProgress>(`${progressBase}/subjects/${subjectId}`)
       : Promise.resolve(null as unknown as SubjectProgress),
+
+  getNextTopic: () =>
+    API_ENABLED
+      ? api<NextTopic | null>(`${progressBase}/next-topic`)
+      : Promise.resolve(null),
 
   completeLesson: (lessonId: string) =>
     API_ENABLED

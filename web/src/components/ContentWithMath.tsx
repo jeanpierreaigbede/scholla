@@ -13,12 +13,29 @@ type ContentWithMathProps = {
   small?: boolean;
 };
 
+/** Ensures "Step N:" and "Example N:" start on a new line and are visually distinct. */
+function formatLessonContent(raw: string): string {
+  if (!raw?.trim()) return raw;
+  return (
+    raw
+      // Step 1: / Step 2: → new paragraph + bold label
+      .replace(/\n(Step\s+\d+):/gi, "\n\n**$1:**")
+      // Example 1: / Example 2: → new paragraph + bold label
+      .replace(/\n(Example\s+\d+):/gi, "\n\n**$1:**")
+      // Normalize multiple newlines (max 2)
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  );
+}
+
 /**
  * Affiche du contenu Markdown avec formules LaTeX (inline $...$ et bloc $$...$$).
  * Utilise KaTeX pour les puissances, racines, fractions, etc.
+ * For full lesson content, formats steps and examples for clearer display.
  */
 export function ContentWithMath({ content, className = "", small }: ContentWithMathProps) {
   if (!content?.trim()) return null;
+  const formatted = small ? content : formatLessonContent(content);
 
   return (
     <div
@@ -29,13 +46,13 @@ export function ContentWithMath({ content, className = "", small }: ContentWithM
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex]}
         components={{
-          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-          h1: ({ children }) => <h1 className="mb-2 mt-4 text-xl font-bold">{children}</h1>,
-          h2: ({ children }) => <h2 className="mb-2 mt-4 text-lg font-semibold">{children}</h2>,
-          h3: ({ children }) => <h3 className="mb-2 mt-3 text-base font-semibold">{children}</h3>,
-          ul: ({ children }) => <ul className="mb-2 list-inside list-disc">{children}</ul>,
-          ol: ({ children }) => <ol className="mb-2 list-inside list-decimal">{children}</ol>,
-          li: ({ children }) => <li className="mb-0.5">{children}</li>,
+          p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+          h1: ({ children }) => <h1 className="mb-3 mt-6 text-xl font-bold">{children}</h1>,
+          h2: ({ children }) => <h2 className="mb-3 mt-6 text-lg font-semibold border-b border-[var(--border)] pb-1">{children}</h2>,
+          h3: ({ children }) => <h3 className="mb-2 mt-4 text-base font-semibold">{children}</h3>,
+          ul: ({ children }) => <ul className="mb-3 list-inside list-disc space-y-0.5">{children}</ul>,
+          ol: ({ children }) => <ol className="mb-3 list-inside list-decimal space-y-0.5">{children}</ol>,
+          li: ({ children }) => <li className="leading-relaxed">{children}</li>,
           strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
           code: ({ className: codeClass, children }) => {
             const isMath = codeClass?.includes("math");
@@ -48,7 +65,7 @@ export function ContentWithMath({ content, className = "", small }: ContentWithM
           },
         }}
       >
-        {content}
+        {formatted}
       </ReactMarkdown>
     </div>
   );

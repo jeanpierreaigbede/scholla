@@ -20,7 +20,6 @@ export default function LessonPage() {
   const router = useRouter();
   const moduleId = params.moduleId as string;
   const lessonId = params.lessonId as string;
-  const quizSectionRef = useRef<HTMLElement>(null);
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [lessonCompleted, setLessonCompleted] = useState(false);
   const [lessonsInModule, setLessonsInModule] = useState<Lesson[]>([]);
@@ -30,6 +29,7 @@ export default function LessonPage() {
   const [quizAnswers, setQuizAnswers] = useState<Record<string, string>>({});
   const [quizResult, setQuizResult] = useState<QuizResultOut | null>(null);
   const [quizSubmitting, setQuizSubmitting] = useState(false);
+  const [quizModalOpen, setQuizModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
 
@@ -76,7 +76,9 @@ export default function LessonPage() {
     try {
       await progressApi.completeLesson(lessonId);
       setLessonCompleted(true);
-      quizSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (chapterQuiz && quizQuestions.length > 0) {
+        setQuizModalOpen(true);
+      }
     } catch {
       setCompleting(false);
     }
@@ -128,88 +130,123 @@ export default function LessonPage() {
           <ContentWithMath content={lesson.content} />
         </article>
 
-        {chapterQuiz && quizQuestions.length > 0 && (
-          <section ref={quizSectionRef} className="mt-8 rounded-2xl border border-[var(--border)] bg-white p-5">
-            <h2 className="text-lg font-semibold text-[var(--foreground)]">
-              {quizResult ? "Quiz result" : "Validate with a quiz"}
-            </h2>
-            {chapterQuiz.description && !quizResult && (
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">{chapterQuiz.description}</p>
-            )}
-            {quizResult ? (
-              <div className="mt-4">
-                <div className="rounded-xl bg-[var(--muted)]/50 p-4 text-center">
-                  <p className="text-2xl font-bold text-[var(--primary)]">{quizResult.score_percent}%</p>
-                  <p className="text-sm text-[var(--muted-foreground)]">
-                    {quizResult.correct_count} / {quizResult.total_questions} correct answers
-                  </p>
-                </div>
-                <ul className="mt-4 space-y-3">
-                  {quizResult.feedback.map((fb, idx) => {
-                    const q = quizQuestions.find((x) => x.id === fb.question_id);
-                    return (
-                      <li
-                        key={fb.question_id}
-                        className={`rounded-lg border p-3 text-sm ${
-                          fb.correct ? "border-[var(--success)]/50 bg-[var(--success)]/5" : "border-red-200 bg-red-50/50"
-                        }`}
-                      >
-                        {q && <ContentWithMath content={q.question_text} small />}
-                        <p className="mt-1 font-medium">Correct answer: {fb.correct_option}</p>
-                        {fb.explanation && (
-                          <p className="mt-1 text-[var(--muted-foreground)]">{fb.explanation}</p>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+        {/* Quiz modal: opens after "Mark as complete" when a quiz exists */}
+        {quizModalOpen && chapterQuiz && quizQuestions.length > 0 && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="quiz-modal-title"
+          >
+            <div
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setQuizModalOpen(false)}
+              aria-hidden="true"
+            />
+            <div className="relative z-10 flex max-h-[90vh] w-full max-w-lg flex-col rounded-2xl border border-[var(--border)] bg-white shadow-xl">
+              <div className="flex shrink-0 items-center justify-between border-b border-[var(--border)] px-5 py-4">
+                <h2 id="quiz-modal-title" className="text-lg font-semibold text-[var(--foreground)]">
+                  {quizResult ? "Quiz result" : chapterQuiz.title}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setQuizModalOpen(false)}
+                  className="rounded-lg p-2 text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)]"
+                  aria-label="Close"
+                >
+                  <span className="text-xl leading-none">×</span>
+                </button>
               </div>
-            ) : (
-              <form onSubmit={handleQuizSubmit} className="mt-4 space-y-4">
-                {quizQuestions.map((q, idx) => (
-                  <fieldset key={q.id} className="rounded-xl border border-[var(--border)] p-4">
-                    <legend className="text-xs font-medium text-[var(--muted-foreground)]">
-                      Question {idx + 1}
-                    </legend>
-                    <div className="mt-1">
-                      <ContentWithMath content={q.question_text} small />
+              <div className="min-h-0 overflow-y-auto p-5">
+                {chapterQuiz.description && !quizResult && (
+                  <p className="mb-4 text-sm text-[var(--muted-foreground)]">{chapterQuiz.description}</p>
+                )}
+                {quizResult ? (
+                  <div>
+                    <div className="rounded-xl bg-[var(--muted)]/50 p-4 text-center">
+                      <p className="text-2xl font-bold text-[var(--primary)]">{quizResult.score_percent}%</p>
+                      <p className="text-sm text-[var(--muted-foreground)]">
+                        {quizResult.correct_count} / {quizResult.total_questions} correct answers
+                      </p>
                     </div>
-                    <div className="mt-3 space-y-2">
-                      {["A", "B", "C", "D"].map((opt) => {
-                        const val = opt === "A" ? q.option_a : opt === "B" ? q.option_b : opt === "C" ? q.option_c : q.option_d;
-                        if (val == null) return null;
+                    <ul className="mt-4 space-y-3">
+                      {quizResult.feedback.map((fb) => {
+                        const q = quizQuestions.find((x) => x.id === fb.question_id);
                         return (
-                          <label
-                            key={opt}
-                            className="flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 has-[:checked]:border-[var(--primary)] has-[:checked]:bg-[var(--primary)]/5"
+                          <li
+                            key={fb.question_id}
+                            className={`rounded-lg border p-3 text-sm ${
+                              fb.correct ? "border-[var(--success)]/50 bg-[var(--success)]/5" : "border-red-200 bg-red-50/50"
+                            }`}
                           >
-                            <input
-                              type="radio"
-                              name={q.id}
-                              value={opt}
-                              checked={quizAnswers[q.id] === opt}
-                              onChange={() => setQuizAnswers((prev) => ({ ...prev, [q.id]: opt }))}
-                              className="h-4 w-4"
-                            />
-                            <div className="min-w-0 flex-1 text-sm">
-                              <ContentWithMath content={val} small />
-                            </div>
-                          </label>
+                            {q && <ContentWithMath content={q.question_text} small />}
+                            <p className="mt-1 font-medium">Correct answer: {fb.correct_option}</p>
+                            {fb.explanation && (
+                              <p className="mt-1 text-[var(--muted-foreground)]">{fb.explanation}</p>
+                            )}
+                          </li>
                         );
                       })}
-                    </div>
-                  </fieldset>
-                ))}
-                <button
-                  type="submit"
-                  disabled={quizSubmitting}
-                  className="w-full rounded-xl bg-[var(--accent)] py-3 font-semibold text-white disabled:opacity-50"
-                >
-                  {quizSubmitting ? "Submitting…" : "Submit quiz"}
-                </button>
-              </form>
-            )}
-          </section>
+                    </ul>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuizResult(null);
+                        setQuizAnswers({});
+                      }}
+                      className="mt-4 w-full rounded-xl border border-[var(--primary)] py-3 font-semibold text-[var(--primary)] hover:bg-[var(--primary)]/5"
+                    >
+                      Take again
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleQuizSubmit} className="space-y-4">
+                    {quizQuestions.map((q, idx) => (
+                      <fieldset key={q.id} className="rounded-xl border border-[var(--border)] p-4">
+                        <legend className="text-xs font-medium text-[var(--muted-foreground)]">
+                          Question {idx + 1}
+                        </legend>
+                        <div className="mt-1">
+                          <ContentWithMath content={q.question_text} small />
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          {["A", "B", "C", "D"].map((opt) => {
+                            const val = opt === "A" ? q.option_a : opt === "B" ? q.option_b : opt === "C" ? q.option_c : q.option_d;
+                            if (val == null) return null;
+                            return (
+                              <label
+                                key={opt}
+                                className="flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 has-[:checked]:border-[var(--primary)] has-[:checked]:bg-[var(--primary)]/5"
+                              >
+                                <input
+                                  type="radio"
+                                  name={q.id}
+                                  value={opt}
+                                  checked={quizAnswers[q.id] === opt}
+                                  onChange={() => setQuizAnswers((prev) => ({ ...prev, [q.id]: opt }))}
+                                  className="h-4 w-4"
+                                />
+                                <div className="min-w-0 flex-1 text-sm">
+                                  <ContentWithMath content={val} small />
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </fieldset>
+                    ))}
+                    <button
+                      type="submit"
+                      disabled={quizSubmitting}
+                      className="w-full rounded-xl bg-[var(--accent)] py-3 font-semibold text-white disabled:opacity-50"
+                    >
+                      {quizSubmitting ? "Submitting…" : "Submit quiz"}
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
         {!lessonCompleted && (

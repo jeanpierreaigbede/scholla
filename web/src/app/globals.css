@@ -65,10 +65,17 @@ body {
   opacity: 0.9;
 }
 
-/* Contenu Markdown + formules LaTeX (KaTeX) */
+/* Contenu Markdown + formules LaTeX (KaTeX) – lecture agréable, étapes aérées */
 .content-with-math {
   overflow-x: auto;
   word-wrap: break-word;
+  line-height: 1.65;
+}
+.content-with-math p {
+  margin-bottom: 0.75em;
+}
+.content-with-math p:last-child {
+  margin-bottom: 0;
 }
 .content-with-math .katex {
   font-size: 1.05em;

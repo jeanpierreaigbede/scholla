@@ -1,6 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  progressApi,
+  type DashboardProgress,
+  type NextTopic,
+} from "@/lib/api";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -10,6 +16,29 @@ function getGreeting() {
 }
 
 export default function DashboardPage() {
+  const [dashboard, setDashboard] = useState<DashboardProgress | null>(null);
+  const [nextTopic, setNextTopic] = useState<NextTopic | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [dashboardData, nextTopicData] = await Promise.all([
+          progressApi.getDashboard(),
+          progressApi.getNextTopic(),
+        ]);
+        setDashboard(dashboardData);
+        setNextTopic(nextTopicData ?? null);
+      } catch {
+        setDashboard(null);
+        setNextTopic(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
   return (
     <div className="min-h-dvh bg-[var(--background)]">
       {/* Web header */}
@@ -59,98 +88,120 @@ export default function DashboardPage() {
           Your preparation dashboard
         </h1>
 
-        {/* Exam Readiness + Streak/Goal row */}
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <section className="rounded-2xl bg-[var(--primary)] p-5 text-white shadow-lg sm:col-span-2">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium opacity-90">Exam preparation</p>
-                <p className="mt-1 text-4xl font-bold">68%</p>
-                <p className="mt-1 text-sm opacity-90">+5% from last week</p>
-              </div>
-              <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-green-400 text-sm font-bold">
-                68%
-              </div>
-            </div>
-            <div className="mt-5 grid grid-cols-3 gap-4 text-sm">
-              <div>
-                <p className="opacity-90">Maths</p>
-                <div className="mt-1.5 h-2 rounded-full bg-white/30">
-                  <div className="h-2 w-[72%] rounded-full bg-green-400" />
+        {loading ? (
+          <p className="mt-6 text-sm text-[var(--muted-foreground)]">Loading…</p>
+        ) : (
+          <>
+            {/* Exam Readiness + Streak/Goal row */}
+            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+              <section className="rounded-2xl bg-[var(--primary)] p-5 text-white shadow-lg sm:col-span-2">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium opacity-90">Exam preparation</p>
+                    <p className="mt-1 text-4xl font-bold">
+                      {dashboard ? Math.round(dashboard.exam_readiness_percent) : 0}%
+                    </p>
+                    {dashboard && dashboard.exam_readiness_delta !== 0 && (
+                      <p className="mt-1 text-sm opacity-90">
+                        {dashboard.exam_readiness_delta > 0 ? "+" : ""}
+                        {dashboard.exam_readiness_delta}% from last week
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-green-400 text-sm font-bold">
+                    {dashboard ? Math.round(dashboard.exam_readiness_percent) : 0}%
+                  </div>
                 </div>
-                <p className="mt-1 font-medium">72%</p>
-              </div>
-              <div>
-                <p className="opacity-90">Science</p>
-                <div className="mt-1.5 h-2 rounded-full bg-white/30">
-                  <div className="h-2 w-[65%] rounded-full bg-green-400" />
+                {dashboard && Array.isArray(dashboard.subject_progress) && dashboard.subject_progress.length > 0 && (
+                  <div className="mt-5 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                    {(dashboard.subject_progress ?? []).map((s) => (
+                      <div key={s.subject_id}>
+                        <p className="opacity-90">{s.subject_name}</p>
+                        <div className="mt-1.5 h-2 rounded-full bg-white/30">
+                          <div
+                            className="h-2 rounded-full bg-green-400 transition-all"
+                            style={{ width: `${Math.min(100, s.progress_percent)}%` }}
+                          />
+                        </div>
+                        <p className="mt-1 font-medium">{Math.round(s.progress_percent)}%</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+              <div className="grid gap-4 sm:grid-cols-1">
+                <div className="rounded-xl border border-[var(--border)] bg-white p-4 shadow-sm">
+                  <span className="text-2xl">🔥</span>
+                  <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+                    Daily streak
+                  </p>
+                  <p className="text-xl font-bold text-[var(--foreground)]">
+                    {dashboard?.daily_streak_days ?? 0} days
+                  </p>
                 </div>
-                <p className="mt-1 font-medium">65%</p>
-              </div>
-              <div>
-                <p className="opacity-90">English</p>
-                <div className="mt-1.5 h-2 rounded-full bg-white/30">
-                  <div className="h-2 w-[88%] rounded-full bg-green-400" />
+                <div className="rounded-xl border border-[var(--border)] bg-white p-4 shadow-sm">
+                  <span className="text-2xl">⏱</span>
+                  <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
+                    Today&apos;s goal
+                  </p>
+                  <p className="text-xl font-bold text-[var(--foreground)]">
+                    {dashboard?.today_goal_minutes ?? 45} min
+                  </p>
                 </div>
-                <p className="mt-1 font-medium">88%</p>
               </div>
             </div>
-          </section>
-          <div className="grid gap-4 sm:grid-cols-1">
-            <div className="rounded-xl border border-[var(--border)] bg-white p-4 shadow-sm">
-              <span className="text-2xl">🔥</span>
-              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
-                Daily streak
-              </p>
-              <p className="text-xl font-bold text-[var(--foreground)]">12 days</p>
-            </div>
-            <div className="rounded-xl border border-[var(--border)] bg-white p-4 shadow-sm">
-              <span className="text-2xl">⏱</span>
-              <p className="mt-2 text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
-                Today&apos;s goal
-              </p>
-              <p className="text-xl font-bold text-[var(--foreground)]">45–60 min</p>
-            </div>
-          </div>
-        </div>
 
-        {/* Next Topic + Quick Actions */}
-        <div className="mt-6 grid gap-6 lg:grid-cols-3">
-          <section className="rounded-xl border border-[var(--border)] bg-white p-5 shadow-sm lg:col-span-2">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-semibold text-[var(--foreground)]">
-                Next topic to master
-              </h2>
-              <Link href="/learn" className="text-sm font-medium text-[var(--primary)] hover:underline">
-                View path →
-              </Link>
-            </div>
-            <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--accent)]">
-                Core Mathematics
-              </p>
-              <h3 className="mt-1 text-lg font-bold text-[var(--foreground)]">
-                Circle theorems
-              </h3>
-              <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                Intermediate · ~15 min left
-              </p>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <Link
-                  href="/learn"
-                  className="rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
-                >
-                  Resume lesson
-                </Link>
-                <Link
-                  href="/learn"
-                  className="rounded-lg border border-[var(--border)] bg-white px-4 py-2.5 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--muted)]"
-                >
-                  Resources
-                </Link>
-              </div>
-            </div>
-          </section>
+            {/* Next Topic + Quick Actions */}
+            <div className="mt-6 grid gap-6 lg:grid-cols-3">
+              <section className="rounded-xl border border-[var(--border)] bg-white p-5 shadow-sm lg:col-span-2">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-semibold text-[var(--foreground)]">
+                    Next topic to master
+                  </h2>
+                  <Link href="/learn" className="text-sm font-medium text-[var(--primary)] hover:underline">
+                    View path →
+                  </Link>
+                </div>
+                {nextTopic ? (
+                  <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[var(--accent)]">
+                      {nextTopic.subject_name}
+                    </p>
+                    <h3 className="mt-1 text-lg font-bold text-[var(--foreground)]">
+                      {nextTopic.lesson_title}
+                    </h3>
+                    <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                      {nextTopic.module_name} · {nextTopic.difficulty} · ~{nextTopic.estimated_minutes_left} min left
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      <Link
+                        href={`/learn/${nextTopic.module_id}/lessons/${nextTopic.lesson_id}`}
+                        className="rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
+                      >
+                        Resume lesson
+                      </Link>
+                      <Link
+                        href={`/learn/${nextTopic.module_id}`}
+                        className="rounded-lg border border-[var(--border)] bg-white px-4 py-2.5 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--muted)]"
+                      >
+                        View chapter
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--muted)]/30 p-4">
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      All caught up! Start a course from the Learn page or review past exams.
+                    </p>
+                    <Link
+                      href="/learn"
+                      className="mt-3 inline-block rounded-lg bg-[var(--primary)] px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
+                    >
+                      Go to Learn
+                    </Link>
+                  </div>
+                )}
+              </section>
 
           <section>
             <h2 className="text-base font-semibold text-[var(--foreground)]">
@@ -206,6 +257,8 @@ export default function DashboardPage() {
             </Link>
           </div>
         </nav>
+          </>
+        )}
       </main>
     </div>
   );
