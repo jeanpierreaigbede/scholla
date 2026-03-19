@@ -74,23 +74,23 @@ async def send_email(
 
 async def send_otp_email(to: str, code: str) -> None:
     """Send OTP verification code email."""
-    subject = "Votre code de vérification Schola"
-    body_text = f"""Bonjour,
+    subject = "Your Schola verification code"
+    body_text = f"""Hello,
 
-Votre code de vérification Schola est : {code}
+Your Schola verification code is: {code}
 
-Ce code expire dans 10 minutes. Ne le partagez avec personne.
+This code expires in 10 minutes. Do not share it with anyone.
 
-— L'équipe Schola
+— The Schola team
 """
     body_html = f"""
 <!DOCTYPE html>
 <html>
 <body style="font-family: sans-serif; max-width: 480px;">
-  <p>Bonjour,</p>
-  <p>Votre code de vérification Schola est : <strong style="font-size: 1.2em; letter-spacing: 0.1em;">{code}</strong></p>
-  <p>Ce code expire dans 10 minutes. Ne le partagez avec personne.</p>
-  <p>— L'équipe Schola</p>
+  <p>Hello,</p>
+  <p>Your Schola verification code is: <strong style="font-size: 1.2em; letter-spacing: 0.1em;">{code}</strong></p>
+  <p>This code expires in 10 minutes. Do not share it with anyone.</p>
+  <p>— The Schola team</p>
 </body>
 </html>
 """

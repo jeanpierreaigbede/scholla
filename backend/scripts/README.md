@@ -1,5 +1,36 @@
 # Scripts d’import
 
+## clear_course_content.py
+
+Vide le contenu des cours en base (subjects, modules, lessons, concepts, exercises, **quizzes**, past exams, user_progress). Utiliser avant de réimporter.
+
+```bash
+python scripts/clear_course_content.py --dry-run
+python scripts/clear_course_content.py
+```
+
+## import_courses_from_courses_json.py
+
+Vide le contenu actuel puis importe le cours depuis **courses.json** (à la racine du repo). Structure : un subject (titre/slug à la racine), modules = chapitres, lessons avec concepts. Le champ `Lesson.content` est rempli par la concaténation de tous les concepts (théorie + exemples + résumé). Les quiz de chaque leçon sont créés et liés au module. Les IDs du JSON sont ignorés.
+
+```bash
+# Depuis la racine du repo (schola/)
+python backend/scripts/import_courses_from_courses_json.py --dry-run
+python backend/scripts/import_courses_from_courses_json.py
+
+# Fichier personnalisé
+python backend/scripts/import_courses_from_courses_json.py --file /chemin/courses.json
+```
+
+## import_course_from_json.py
+
+Importe un cours depuis un fichier JSON (subject → modules → lessons → concepts/exercises). Fichier par défaut : `course_content.json`.
+
+```bash
+python scripts/import_course_from_json.py --dry-run
+python scripts/import_course_from_json.py --file mon_cours.json
+```
+
 ## import_content.py
 
 Importe le contenu des PDFs vers la base de données :

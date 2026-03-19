@@ -14,12 +14,18 @@ class LessonCompletionOut(BaseModel):
         from_attributes = True
 
 
+class SubjectProgressItemOut(BaseModel):
+    """Subject progress with name for dashboard listing."""
+    subject_id: UUID
+    subject_name: str
+    progress_percent: float
+
+
 class DashboardProgressOut(BaseModel):
-    exam_readiness_percent: int
-    exam_readiness_delta: int  # e.g. +5 from last week
-    maths_percent: int
-    science_percent: int
-    english_percent: int
+    """Dashboard data: overall progress and per-subject breakdown."""
+    exam_readiness_percent: float  # 0–100, average of subject progress
+    exam_readiness_delta: int  # e.g. +5 from last week (0 if not computed)
+    subject_progress: list[SubjectProgressItemOut]
     daily_streak_days: int
     today_goal_minutes: int
 

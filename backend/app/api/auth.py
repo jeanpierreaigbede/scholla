@@ -24,6 +24,8 @@ from app.services.email import send_otp_email, EmailSendError
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+OTP_EXPIRE_MINUTES = 10
+
 
 @router.post("/signup", response_model=SignupResponse)
 async def signup(data: SignupRequest, db: AsyncSession = Depends(get_db)):
@@ -56,7 +58,7 @@ async def signup(data: SignupRequest, db: AsyncSession = Depends(get_db)):
     otp = OTPCode(
         user_id=user.id,
         code=code,
-        expires_at=datetime.utcnow() + timedelta(minutes=1),
+        expires_at=datetime.utcnow() + timedelta(minutes=OTP_EXPIRE_MINUTES),
     )
     db.add(otp)
     await db.flush()
@@ -79,7 +81,7 @@ async def resend_otp(data: ResendOTPRequest, db: AsyncSession = Depends(get_db))
     otp = OTPCode(
         user_id=user.id,
         code=code,
-        expires_at=datetime.utcnow() + timedelta(minutes=1),
+        expires_at=datetime.utcnow() + timedelta(minutes=OTP_EXPIRE_MINUTES),
     )
     db.add(otp)
     await db.flush()

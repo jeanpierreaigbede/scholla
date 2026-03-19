@@ -18,6 +18,7 @@ from app.models.content import (
 from app.schemas.progress import (
     DashboardProgressOut,
     LessonCompletionOut,
+    SubjectProgressItemOut,
     SubjectProgressOut,
 )
 from app.schemas.content import NextTopicOut
@@ -30,14 +31,83 @@ async def get_dashboard_progress(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Mock data for MVP; replace with real aggregates from user_progress + quiz results
+    """Aggregate progress for all subjects and overall exam readiness."""
+    subjects_result = await db.execute(select(Subject).order_by(Subject.order_index))
+    subjects = list(subjects_result.scalars().all())
+    subject_progress_list: list[SubjectProgressItemOut] = []
+    total_percent = 0.0
+    count_with_activity = 0
+
+    for subject in subjects:
+        module_ids_result = await db.execute(
+            select(Module.id).where(Module.subject_id == subject.id)
+        )
+        module_ids = [r[0] for r in module_ids_result.all()]
+        if not module_ids:
+            lessons_total = 0
+            past_exams_total = 0
+        else:
+            lessons_total_result = await db.execute(
+                select(func.count(Lesson.id)).where(Lesson.module_id.in_(module_ids))
+            )
+            lessons_total = lessons_total_result.scalar() or 0
+            past_exams_total_result = await db.execute(
+                select(func.count(PastExam.id)).where(PastExam.subject_id == subject.id)
+            )
+            past_exams_total = past_exams_total_result.scalar() or 0
+
+        if not module_ids:
+            lessons_completed = 0
+        else:
+            done_lessons = await db.execute(
+                select(Lesson.id)
+                .where(Lesson.module_id.in_(module_ids))
+                .where(
+                    Lesson.id.in_(
+                        select(UserProgress.lesson_id).where(
+                            UserProgress.user_id == current_user.id,
+                            UserProgress.completed_at.isnot(None),
+                        )
+                    )
+                )
+            )
+            lessons_completed = len(done_lessons.all())
+
+        exams_done_result = await db.execute(
+            select(func.count(PastExamAttempt.id))
+            .where(
+                PastExamAttempt.user_id == current_user.id,
+                PastExamAttempt.past_exam_id.in_(
+                    select(PastExam.id).where(PastExam.subject_id == subject.id)
+                ),
+            )
+        )
+        past_exams_completed = exams_done_result.scalar() or 0
+
+        total_activities = lessons_total + past_exams_total
+        completed_activities = lessons_completed + past_exams_completed
+        progress_percent = (
+            round(100 * completed_activities / total_activities, 1) if total_activities else 0.0
+        )
+        subject_progress_list.append(
+            SubjectProgressItemOut(
+                subject_id=subject.id,
+                subject_name=subject.name,
+                progress_percent=progress_percent,
+            )
+        )
+        if total_activities > 0:
+            total_percent += progress_percent
+            count_with_activity += 1
+
+    exam_readiness = (
+        round(total_percent / count_with_activity, 1) if count_with_activity else 0.0
+    )
     return DashboardProgressOut(
-        exam_readiness_percent=68,
-        exam_readiness_delta=5,
-        maths_percent=72,
-        science_percent=65,
-        english_percent=88,
-        daily_streak_days=12,
+        exam_readiness_percent=exam_readiness,
+        exam_readiness_delta=0,
+        subject_progress=subject_progress_list,
+        daily_streak_days=0,
         today_goal_minutes=45,
     )
 
