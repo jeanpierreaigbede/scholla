@@ -1,14 +1,14 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 const API_ENABLED = !!API_BASE;
 
-/** Message d'erreur lisible pour l'utilisateur (évite "Failed to fetch" brut). */
+/** User-friendly error message (avoids raw "Failed to fetch"). */
 export function getErrorMessage(err: unknown): string {
   if (err instanceof Error) {
     if (err.message === "Failed to fetch" || err.message.includes("Load failed"))
-      return "Connexion impossible. Vérifiez votre réseau.";
+      return "Unable to connect. Check your network.";
     return err.message;
   }
-  return "Une erreur est survenue.";
+  return "Something went wrong.";
 }
 
 function getToken(): string | null {
@@ -188,6 +188,9 @@ export const contentApi = {
   listSubjects: () =>
     API_ENABLED ? api<Subject[]>(`${contentBase}/subjects`) : Promise.resolve([]),
 
+  getSubject: (subjectId: string) =>
+    API_ENABLED ? api<Subject>(`${contentBase}/subjects/${subjectId}`) : Promise.resolve(null as unknown as Subject),
+
   listModules: (subjectId: string) =>
     API_ENABLED
       ? api<Module[]>(`${contentBase}/subjects/${subjectId}/modules`)
@@ -224,6 +227,51 @@ export const contentApi = {
           body: JSON.stringify({ answers }),
         })
       : Promise.resolve(null as unknown as PastExamResult),
+};
+
+// ----- Quiz (validation en fin de leçon / chapitre) -----
+export type QuizOut = {
+  id: string;
+  module_id: string | null;
+  title: string;
+  description: string | null;
+};
+export type QuizQuestionOut = {
+  id: string;
+  quiz_id: string;
+  question_text: string;
+  option_a: string;
+  option_b: string;
+  option_c: string | null;
+  option_d: string | null;
+  order_index: number;
+};
+export type QuizResultOut = {
+  score_percent: number;
+  total_questions: number;
+  correct_count: number;
+  feedback: Array<{ question_id: string; correct: boolean; correct_option: string; explanation: string | null }>;
+};
+
+const quizBase = "/quiz";
+export const quizApi = {
+  listByModule: (moduleId: string) =>
+    API_ENABLED
+      ? api<QuizOut[]>(`${quizBase}?module_id=${encodeURIComponent(moduleId)}`)
+      : Promise.resolve([]),
+
+  getQuestions: (quizId: string) =>
+    API_ENABLED
+      ? api<QuizQuestionOut[]>(`${quizBase}/${quizId}/questions`)
+      : Promise.resolve([]),
+
+  submit: (quizId: string, answers: { question_id: string; selected_option: string }[]) =>
+    API_ENABLED
+      ? api<QuizResultOut>(`${quizBase}/${quizId}/submit`, {
+          method: "POST",
+          body: JSON.stringify({ answers }),
+        })
+      : Promise.resolve(null as unknown as QuizResultOut),
 };
 
 // ----- Progress -----

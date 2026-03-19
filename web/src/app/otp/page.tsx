@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { authApi } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 
-const RESEND_COOLDOWN_SEC = 60; // 1 minute, aligné avec le backend
+const RESEND_COOLDOWN_SEC = 60; // 1 minute, aligned with backend
 
 function formatCountdown(sec: number) {
   const m = Math.floor(sec / 60);
@@ -47,9 +47,9 @@ function OTPForm() {
     try {
       await authApi.resendOtp({ email });
       setResendCooldown(RESEND_COOLDOWN_SEC);
-      addToast("Un nouveau code a été envoyé à votre email.", "success");
+      addToast("A new code has been sent to your email.", "success");
     } catch {
-      addToast("Impossible d’envoyer un nouveau code. Réessayez plus tard.");
+      addToast("Could not send a new code. Please try again later.");
     }
   }, [email, resendCooldown, addToast]);
 
@@ -64,7 +64,7 @@ function OTPForm() {
       }
       router.push("/onboarding/1");
     } catch (err) {
-      addToast(err instanceof Error ? err.message : "Code invalide ou expiré.");
+      addToast(err instanceof Error ? err.message : "Invalid or expired code.");
     } finally {
       setLoading(false);
     }
@@ -111,7 +111,7 @@ function OTPForm() {
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             className="sr-only"
-            aria-label="Code de vérification à 6 chiffres"
+            aria-label="6-digit verification code"
           />
 
           <div
@@ -147,14 +147,14 @@ function OTPForm() {
           </button>
 
           <div className="mt-2 text-center text-xs text-[var(--muted-foreground)]">
-            <p>Vous n&apos;avez pas reçu le code ?</p>
+            <p>Didn&apos;t receive the code?</p>
             <button
               type="button"
               onClick={handleResend}
               disabled={resendCooldown > 0}
               className="mt-1 font-semibold text-[var(--primary)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Renvoyer le code {resendCooldown > 0 ? `(${formatCountdown(resendCooldown)})` : ""}
+              Resend code {resendCooldown > 0 ? `(${formatCountdown(resendCooldown)})` : ""}
             </button>
           </div>
         </form>

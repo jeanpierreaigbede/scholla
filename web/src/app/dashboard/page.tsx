@@ -56,7 +56,7 @@ export default function DashboardPage() {
           {getGreeting()}, welcome back.
         </p>
         <h1 className="mt-1 text-2xl font-bold text-[var(--foreground)] sm:text-3xl">
-          Your WASSCE dashboard
+          Your preparation dashboard
         </h1>
 
         {/* Exam Readiness + Streak/Goal row */}
@@ -64,7 +64,7 @@ export default function DashboardPage() {
           <section className="rounded-2xl bg-[var(--primary)] p-5 text-white shadow-lg sm:col-span-2">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium opacity-90">Exam Readiness</p>
+                <p className="text-sm font-medium opacity-90">Exam preparation</p>
                 <p className="mt-1 text-4xl font-bold">68%</p>
                 <p className="mt-1 text-sm opacity-90">+5% from last week</p>
               </div>

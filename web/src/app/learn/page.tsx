@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { contentApi, getErrorMessage, type Subject, type Module, type PastExam } from "@/lib/api";
+import {
+  contentApi,
+  progressApi,
+  getErrorMessage,
+  type Subject,
+  type Module,
+  type PastExam,
+  type SubjectProgress,
+} from "@/lib/api";
 import { useToast } from "@/components/Toast";
 
 export default function LearnPage() {
@@ -10,6 +18,7 @@ export default function LearnPage() {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [modulesBySubject, setModulesBySubject] = useState<Record<string, Module[]>>({});
   const [pastExamsBySubject, setPastExamsBySubject] = useState<Record<string, PastExam[]>>({});
+  const [progressBySubject, setProgressBySubject] = useState<Record<string, SubjectProgress | null>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -19,12 +28,14 @@ export default function LearnPage() {
         const subj = await contentApi.listSubjects();
         setSubjects(subj);
         for (const s of subj) {
-          const [mods, exams] = await Promise.all([
+          const [mods, exams, progress] = await Promise.all([
             contentApi.listModules(s.id),
             contentApi.listPastExams(s.id),
+            progressApi.getSubjectProgress(s.id).catch(() => null),
           ]);
           setModulesBySubject((prev) => ({ ...prev, [s.id]: mods }));
           setPastExamsBySubject((prev) => ({ ...prev, [s.id]: exams }));
+          setProgressBySubject((prev) => ({ ...prev, [s.id]: progress }));
         }
       } catch (e) {
         setError(true);
@@ -47,7 +58,7 @@ export default function LearnPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6">
         <p className="text-sm text-[var(--muted-foreground)]">
-          Contenu indisponible. Affichage du placeholder.
+          Content unavailable. Showing placeholder.
         </p>
         <PlaceholderLearn />
         <Link href="/dashboard" className="text-[var(--primary)]">← Dashboard</Link>
@@ -56,9 +67,9 @@ export default function LearnPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] pb-20">
+    <div className="min-h-screen bg-[var(--background)] pb-8">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border)] bg-white px-6 py-4">
-        <Link href="/dashboard" className="text-[var(--primary)]">← Back</Link>
+        <div className="w-8" />
         <h1 className="text-lg font-semibold">Learn</h1>
         <div className="w-8" />
       </header>
@@ -67,69 +78,87 @@ export default function LearnPage() {
           <PlaceholderLearn />
         ) : (
           <div className="space-y-8">
-            {subjects.map((s) => (
-              <section key={s.id}>
-                <h2 className="mb-3 text-sm font-medium text-[var(--muted-foreground)]">
-                  {s.name}
-                </h2>
-                <ul className="space-y-2">
-                  {(modulesBySubject[s.id] || []).map((m) => (
-                    <li key={m.id}>
-                      <Link
-                        href={`/learn/${m.id}`}
-                        className="block rounded-xl border border-[var(--border)] bg-white p-4"
-                      >
-                        <span className="font-medium">{m.name}</span>
-                        <span className="ml-2 text-sm text-[var(--muted-foreground)]">
-                          {m.estimated_minutes} min
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                {(pastExamsBySubject[s.id]?.length ?? 0) > 0 && (
-                  <div className="mt-4">
-                    <p className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">
-                      Past exams
-                    </p>
-                    <ul className="space-y-2">
-                      {(pastExamsBySubject[s.id] || []).map((exam) => (
-                        <li key={exam.id}>
-                          <Link
-                            href={`/learn/past-exams/${exam.id}`}
-                            className="block rounded-xl border border-[var(--border)] bg-white p-4 text-[var(--primary)]"
-                          >
-                            📝 {exam.title}
-                            {exam.year != null && (
-                              <span className="ml-2 text-sm text-[var(--muted-foreground)]">
-                                ({exam.year})
-                              </span>
-                            )}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
+            {subjects.map((s) => {
+              const progress = progressBySubject[s.id];
+              const mods = modulesBySubject[s.id] || [];
+              const exams = pastExamsBySubject[s.id] || [];
+              const totalActivities = (progress?.lessons_total ?? 0) + (progress?.past_exams_total ?? 0);
+              const percent = progress?.progress_percent ?? 0;
+              return (
+                <section key={s.id} className="rounded-2xl border border-[var(--border)] bg-white p-5">
+                  <div className="mb-4 flex items-center justify-between">
+                    <Link href={`/learn/subjects/${s.id}`} className="font-semibold text-[var(--foreground)] hover:underline">
+                      {s.name}
+                    </Link>
+                    {totalActivities > 0 && (
+                      <span className="text-sm font-medium text-[var(--primary)]">
+                        {Math.round(percent)}%
+                      </span>
+                    )}
                   </div>
-                )}
-              </section>
-            ))}
+                  {totalActivities > 0 && (
+                    <div className="mb-4">
+                      <div className="h-2 w-full rounded-full bg-[var(--muted)]">
+                        <div
+                          className="h-2 rounded-full bg-[var(--primary)] transition-all"
+                          style={{ width: `${Math.min(100, percent)}%` }}
+                        />
+                      </div>
+                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
+                        {progress?.lessons_completed ?? 0}/{progress?.lessons_total ?? 0} lessons
+                        {(progress?.past_exams_total ?? 0) > 0 &&
+                          ` · ${progress?.past_exams_completed ?? 0}/${progress?.past_exams_total ?? 0} exam(s)`}
+                      </p>
+                    </div>
+                  )}
+                  <p className="mb-3 text-xs font-medium text-[var(--muted-foreground)]">
+                    Chapters
+                  </p>
+                  <ul className="space-y-2">
+                    {mods.map((m) => (
+                      <li key={m.id}>
+                        <Link
+                          href={`/learn/${m.id}`}
+                          className="block rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 transition hover:border-[var(--primary)]/30"
+                        >
+                          <span className="font-medium">{m.name}</span>
+                          <span className="ml-2 text-sm text-[var(--muted-foreground)]">
+                            {m.estimated_minutes} min
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  {exams.length > 0 && (
+                    <div className="mt-4">
+                      <p className="mb-2 text-xs font-medium text-[var(--muted-foreground)]">
+                        Past exams
+                      </p>
+                      <ul className="space-y-2">
+                        {exams.map((exam) => (
+                          <li key={exam.id}>
+                            <Link
+                              href={`/learn/past-exams/${exam.id}`}
+                              className="block rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-[var(--primary)] transition hover:border-[var(--primary)]/30"
+                            >
+                              📝 {exam.title}
+                              {exam.year != null && (
+                                <span className="ml-2 text-sm text-[var(--muted-foreground)]">
+                                  ({exam.year})
+                                </span>
+                              )}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </section>
+              );
+            })}
           </div>
         )}
       </main>
-      <nav className="fixed bottom-0 left-0 right-0 flex border-t border-[var(--border)] bg-[var(--primary)] text-white">
-        <Link href="/dashboard" className="flex flex-1 flex-col items-center py-3 text-sm opacity-80">
-          🏠 Home
-        </Link>
-        <span className="flex flex-1 flex-col items-center py-3 text-sm font-medium opacity-100">
-          📚 Learn
-        </span>
-        <Link href="/stats" className="flex flex-1 flex-col items-center py-3 text-sm opacity-80">
-          📊 Stats
-        </Link>
-        <Link href="/dashboard/settings" className="flex flex-1 flex-col items-center py-3 text-sm opacity-80">
-          ⚙️ Settings
-        </Link>
-      </nav>
     </div>
   );
 }

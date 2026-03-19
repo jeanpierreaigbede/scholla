@@ -34,9 +34,9 @@ export default function ParentPortalPage() {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6">
         <p className="text-sm text-[var(--muted-foreground)]">
-          Connectez-vous avec un compte parent pour accéder au portail.
+          Sign in with a parent account to access the portal.
         </p>
-        <Link href="/login" className="text-[var(--primary)]">Aller à la connexion</Link>
+        <Link href="/login" className="text-[var(--primary)]">Go to sign in</Link>
       </div>
     );
   }

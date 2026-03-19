@@ -69,16 +69,16 @@ export default function PastExamPage() {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-[var(--muted-foreground)]">Chargement…</p>
+        <p className="text-[var(--muted-foreground)]">Loading…</p>
       </div>
     );
   }
   if (!exam) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6">
-        <p className="text-[var(--muted-foreground)]">Examen introuvable</p>
+        <p className="text-[var(--muted-foreground)]">Exam not found</p>
         <Link href="/learn" className="text-[var(--primary)]">
-          ← Retour aux cours
+          ← Back to courses
         </Link>
       </div>
     );
@@ -88,8 +88,8 @@ export default function PastExamPage() {
     return (
       <div className="min-h-screen bg-[var(--background)] pb-8">
         <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-white px-6 py-4">
-          <Link href="/learn" className="text-[var(--primary)]">← Retour aux cours</Link>
-          <h1 className="mt-2 text-lg font-semibold">Résultats – {exam.title}</h1>
+          <Link href="/learn" className="text-[var(--primary)]">← Back to courses</Link>
+          <h1 className="mt-2 text-lg font-semibold">Results – {exam.title}</h1>
         </header>
         <main className="p-6">
           <div className="mb-6 rounded-xl border border-[var(--border)] bg-white p-6 text-center">
@@ -98,12 +98,12 @@ export default function PastExamPage() {
               {result.score_percent}%
             </p>
             <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-              {result.correct_count} / {result.total_questions} bonnes réponses
+              {result.correct_count} / {result.total_questions} correct answers
             </p>
           </div>
           <section>
             <h2 className="mb-3 text-sm font-medium text-[var(--muted-foreground)]">
-              Détail par question
+              Per-question breakdown
             </h2>
             <ul className="space-y-4">
               {result.feedback.map((fb, idx) => {
@@ -127,7 +127,7 @@ export default function PastExamPage() {
                     )}
                     <p className="mt-2 text-sm">
                       <span className="font-medium">
-                        Bonne réponse : {fb.correct_option}
+                        Correct answer: {fb.correct_option}
                       </span>
                     </p>
                     {fb.explanation && (
@@ -145,7 +145,7 @@ export default function PastExamPage() {
               href="/learn"
               className="block rounded-xl bg-[var(--primary)] py-3 text-center font-semibold text-white"
             >
-              Retour aux cours
+              Back to courses
             </Link>
           </div>
         </main>
@@ -156,10 +156,10 @@ export default function PastExamPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] pb-8">
       <header className="sticky top-0 z-10 border-b border-[var(--border)] bg-white px-6 py-4">
-        <Link href="/learn" className="text-[var(--primary)]">← Retour</Link>
+        <Link href="/learn" className="text-[var(--primary)]">← Back</Link>
         <h1 className="mt-2 text-lg font-semibold">{exam.title}</h1>
         <p className="text-sm text-[var(--muted-foreground)]">
-          {questions.length} question(s) – Répondez puis soumettez pour voir les résultats
+          {questions.length} question(s) – Answer then submit to see results
         </p>
       </header>
       <main className="p-6">
@@ -214,7 +214,7 @@ export default function PastExamPage() {
             disabled={submitting}
             className="w-full rounded-xl bg-[var(--primary)] py-3 font-semibold text-white disabled:opacity-50"
           >
-            {submitting ? "Envoi…" : "Soumettre et voir les résultats"}
+            {submitting ? "Submitting…" : "Submit and see results"}
           </button>
         </form>
       </main>
