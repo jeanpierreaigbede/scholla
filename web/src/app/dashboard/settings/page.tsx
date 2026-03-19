@@ -1,16 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { clearAuthToken } from "@/lib/api";
 
 export default function SettingsPage() {
-  const router = useRouter();
-
   function handleLogout() {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("schola_token");
-      router.push("/");
-    }
+    clearAuthToken();
+    // Full reload so cached pages and client state are cleared; user lands on home
+    window.location.href = "/";
   }
 
   return (

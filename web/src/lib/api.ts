@@ -1,6 +1,9 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 const API_ENABLED = !!API_BASE;
 
+/** Cookie name used for auth so middleware can protect routes (same value as localStorage). */
+export const AUTH_TOKEN_KEY = "schola_token";
+
 /** User-friendly error message (avoids raw "Failed to fetch"). */
 export function getErrorMessage(err: unknown): string {
   if (err instanceof Error) {
@@ -13,7 +16,22 @@ export function getErrorMessage(err: unknown): string {
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("schola_token");
+  return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+/** Set auth token in localStorage and cookie (cookie used by middleware for route protection). */
+export function setAuthToken(token: string): void {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(AUTH_TOKEN_KEY, token);
+  const maxAge = 60 * 60 * 24 * 7; // 7 days
+  document.cookie = `${AUTH_TOKEN_KEY}=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+}
+
+/** Clear auth token from localStorage and cookie. Call on logout. */
+export function clearAuthToken(): void {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  document.cookie = `${AUTH_TOKEN_KEY}=; path=/; max-age=0`;
 }
 
 export async function api<T>(
@@ -36,7 +54,11 @@ export async function api<T>(
   if (token) {
     (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
   }
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const res = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+    cache: "no-store",
+  });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
     throw new Error(err.detail || "Request failed");
@@ -315,10 +337,17 @@ export type DashboardProgress = {
 };
 
 const progressBase = "/progress";
+
+/** Cache-busting param so dashboard/progress never uses stale cached response. */
+function progressUrl(path: string): string {
+  const sep = path.includes("?") ? "&" : "?";
+  return `${progressBase}${path}${sep}_=${Date.now()}`;
+}
+
 export const progressApi = {
   getDashboard: () =>
     API_ENABLED
-      ? api<DashboardProgress>(`${progressBase}/dashboard`)
+      ? api<DashboardProgress>(progressUrl("/dashboard"))
       : Promise.resolve({
           exam_readiness_percent: 0,
           exam_readiness_delta: 0,
@@ -334,7 +363,7 @@ export const progressApi = {
 
   getNextTopic: () =>
     API_ENABLED
-      ? api<NextTopic | null>(`${progressBase}/next-topic`)
+      ? api<NextTopic | null>(progressUrl("/next-topic"))
       : Promise.resolve(null),
 
   completeLesson: (lessonId: string) =>

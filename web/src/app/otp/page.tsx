@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, Suspense, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { authApi } from "@/lib/api";
+import { authApi, setAuthToken } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 
 const RESEND_COOLDOWN_SEC = 60; // 1 minute, aligned with backend
@@ -59,9 +59,7 @@ function OTPForm() {
     setLoading(true);
     try {
       const { access_token } = await authApi.verifyOtp({ email, code });
-      if (typeof window !== "undefined") {
-        localStorage.setItem("schola_token", access_token);
-      }
+      setAuthToken(access_token);
       router.push("/onboarding/1");
     } catch (err) {
       addToast(err instanceof Error ? err.message : "Invalid or expired code.");
@@ -73,91 +71,95 @@ function OTPForm() {
   if (!email) return null;
 
   return (
-    <div className="relative min-h-screen bg-[var(--background)] px-0 pt-0 pb-0">
-      {/* Top soft gradient like Figma */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-[#e0f2ff] via-[#eef7ff] to-transparent" />
+    <div className="relative min-h-dvh bg-[var(--background)]">
+      {/* Top soft gradient */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-48 bg-gradient-to-b from-[#e0f2ff] via-[#eef7ff] to-transparent sm:h-64" />
 
-      <div className="relative px-6 pt-6 pb-8">
-        <header className="mb-6 flex items-center">
+      <div className="relative flex min-h-dvh flex-col items-center px-4 py-8 sm:px-6">
+        <header className="flex w-full max-w-sm items-center justify-between sm:max-w-md">
           <Link href="/signup" className="text-sm text-[var(--primary)] hover:underline" aria-label="Back to signup">
             ← Back
           </Link>
-          <div className="mx-auto text-sm font-semibold text-[var(--primary)]">
-            Schola
-          </div>
+          <span className="text-sm font-semibold text-[var(--primary)]">Schola</span>
+          <span className="w-12" aria-hidden />
         </header>
 
-        <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-white/70 shadow-sm">
-          <span className="text-xl text-[var(--primary)]">🔒</span>
-        </div>
-
-        <h1 className="text-xl font-extrabold text-[var(--foreground)]">
-          Verify Your Account
-        </h1>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--muted-foreground)]">
-          We&apos;ve sent a 6-digit code to your email/phone. Please enter it below to proceed.
-        </p>
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-          {/* Hidden real input, we display 6 boxes bound to `code` */}
-          <input
-            ref={inputRef}
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            maxLength={6}
-            value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            className="sr-only"
-            aria-label="6-digit verification code"
-          />
-
-          <div
-            className="flex justify-between gap-2"
-            onClick={() => {
-              inputRef.current?.focus();
-            }}
-          >
-            {Array.from({ length: 6 }).map((_, i) => {
-              const activeIndex = Math.min(code.length, 5);
-              const isActive = isFocused && i === activeIndex;
-              return (
-                <div
-                  key={i}
-                  className={`flex h-12 w-10 items-center justify-center rounded-lg border-2 bg-white text-lg font-semibold text-[var(--foreground)] transition-colors ${
-                    isActive
-                      ? "border-[var(--primary)] ring-2 ring-[var(--primary)]/30"
-                      : "border-[var(--border)]"
-                  }`}
-                >
-                  {code[i] ?? ""}
-                </div>
-              );
-            })}
+        <div className="mt-8 flex w-full max-w-sm flex-1 flex-col sm:max-w-md">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[var(--border)] bg-white shadow-sm">
+            <span className="text-2xl" aria-hidden>🔒</span>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading || code.length !== 6}
-            className="w-full rounded-full bg-[var(--primary)] py-3.5 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {loading ? "Verifying…" : "Verify & Activate"}
-          </button>
+          <h1 className="mt-6 text-2xl font-extrabold text-[var(--foreground)]">
+            Verify your account
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--muted-foreground)]">
+            We&apos;ve sent a 6-digit code to <strong className="text-[var(--foreground)]">{email}</strong>. Enter it below.
+          </p>
 
-          <div className="mt-2 text-center text-xs text-[var(--muted-foreground)]">
-            <p>Didn&apos;t receive the code?</p>
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={resendCooldown > 0}
-              className="mt-1 font-semibold text-[var(--primary)] disabled:opacity-50 disabled:cursor-not-allowed"
+          <form onSubmit={handleSubmit} className="mt-8 w-full space-y-6">
+            <input
+              ref={inputRef}
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              className="sr-only"
+              aria-label="6-digit verification code"
+            />
+
+            <div
+              className="flex justify-center gap-2"
+              onClick={() => inputRef.current?.focus()}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") inputRef.current?.focus();
+              }}
+              aria-label="Click to focus code input"
             >
-              Resend code {resendCooldown > 0 ? `(${formatCountdown(resendCooldown)})` : ""}
+              {Array.from({ length: 6 }).map((_, i) => {
+                const activeIndex = Math.min(code.length, 5);
+                const isActive = isFocused && i === activeIndex;
+                return (
+                  <div
+                    key={i}
+                    className={`flex h-12 w-11 shrink-0 items-center justify-center rounded-xl border-2 bg-white text-lg font-semibold text-[var(--foreground)] shadow-sm transition-colors sm:h-14 sm:w-12 ${
+                      isActive
+                        ? "border-[var(--primary)] ring-2 ring-[var(--primary)]/20"
+                        : "border-[var(--border)]"
+                    }`}
+                  >
+                    {code[i] ?? ""}
+                  </div>
+                );
+              })}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || code.length !== 6}
+              className="w-full rounded-xl bg-[var(--primary)] py-3.5 text-sm font-semibold text-white shadow-sm disabled:opacity-50"
+            >
+              {loading ? "Verifying…" : "Verify & continue"}
             </button>
-          </div>
-        </form>
+
+            <p className="text-center text-xs text-[var(--muted-foreground)]">
+              Didn&apos;t receive the code?{" "}
+              <button
+                type="button"
+                onClick={handleResend}
+                disabled={resendCooldown > 0}
+                className="font-semibold text-[var(--primary)] hover:underline disabled:opacity-50 disabled:no-underline"
+              >
+                Resend {resendCooldown > 0 ? `(${formatCountdown(resendCooldown)})` : "code"}
+              </button>
+            </p>
+          </form>
+        </div>
       </div>
     </div>
   );

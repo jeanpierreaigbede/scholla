@@ -12,11 +12,13 @@ import {
 } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 import { ContentWithMath } from "@/components/ContentWithMath";
+import { useProgress } from "@/contexts/ProgressContext";
 
 export default function PastExamPage() {
   const params = useParams();
   const router = useRouter();
   const { addToast } = useToast();
+  const { refreshProgress } = useProgress();
   const examId = params.examId as string;
   const [exam, setExam] = useState<PastExam | null>(null);
   const [questions, setQuestions] = useState<PastExamQuestion[]>([]);
@@ -58,7 +60,10 @@ export default function PastExamPage() {
     setSubmitting(true);
     try {
       const res = await contentApi.submitPastExam(examId, answersPayload);
-      if (res) setResult(res);
+      if (res) {
+        setResult(res);
+        refreshProgress();
+      }
     } catch (e) {
       addToast(getErrorMessage(e));
     } finally {

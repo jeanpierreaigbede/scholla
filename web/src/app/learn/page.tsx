@@ -69,7 +69,9 @@ export default function LearnPage() {
   return (
     <div className="min-h-screen bg-[var(--background)] pb-8">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--border)] bg-white px-6 py-4">
-        <div className="w-8" />
+        <Link href="/dashboard" className="text-[var(--primary)] hover:underline">
+          ← Dashboard
+        </Link>
         <h1 className="text-lg font-semibold">Learn</h1>
         <div className="w-8" />
       </header>

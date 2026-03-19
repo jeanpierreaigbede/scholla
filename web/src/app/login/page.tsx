@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { authApi, getErrorMessage } from "@/lib/api";
+import { useRouter, useSearchParams } from "next/navigation";
+import { authApi, getErrorMessage, setAuthToken } from "@/lib/api";
 import { useToast } from "@/components/Toast";
 
-export default function LoginPage() {
+const ALLOWED_REDIRECT_PREFIXES = ["/dashboard", "/learn", "/stats", "/flashcards", "/subscribe", "/onboarding"];
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
@@ -18,10 +21,13 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { access_token } = await authApi.login(form);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("schola_token", access_token);
-      }
-      router.push("/dashboard");
+      setAuthToken(access_token);
+      const from = searchParams.get("from");
+      const redirectTo =
+        from && ALLOWED_REDIRECT_PREFIXES.some((p) => from === p || from.startsWith(`${p}/`))
+          ? from
+          : "/dashboard";
+      router.push(redirectTo);
     } catch (err) {
       addToast(getErrorMessage(err));
     } finally {
@@ -103,5 +109,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex min-h-dvh items-center justify-center bg-[var(--background)]"><p className="text-[var(--muted-foreground)]">Loading…</p></div>}>
+      <LoginForm />
+    </Suspense>
   );
 }

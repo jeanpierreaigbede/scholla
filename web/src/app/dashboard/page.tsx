@@ -1,12 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
-import {
-  progressApi,
-  type DashboardProgress,
-  type NextTopic,
-} from "@/lib/api";
+import { useProgress } from "@/contexts/ProgressContext";
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -16,28 +12,15 @@ function getGreeting() {
 }
 
 export default function DashboardPage() {
-  const [dashboard, setDashboard] = useState<DashboardProgress | null>(null);
-  const [nextTopic, setNextTopic] = useState<NextTopic | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { dashboard, nextTopic, loading, refreshProgress } = useProgress();
 
   useEffect(() => {
-    async function load() {
-      try {
-        const [dashboardData, nextTopicData] = await Promise.all([
-          progressApi.getDashboard(),
-          progressApi.getNextTopic(),
-        ]);
-        setDashboard(dashboardData);
-        setNextTopic(nextTopicData ?? null);
-      } catch {
-        setDashboard(null);
-        setNextTopic(null);
-      } finally {
-        setLoading(false);
-      }
+    if (process.env.NODE_ENV === "development") {
+      // eslint-disable-next-line no-console
+      console.log("[SCHOLA] API URL:", process.env.NEXT_PUBLIC_API_URL ?? "(not set — progress will use fallback)");
     }
-    load();
-  }, []);
+    refreshProgress();
+  }, [refreshProgress]);
 
   return (
     <div className="min-h-dvh bg-[var(--background)]">
@@ -84,9 +67,19 @@ export default function DashboardPage() {
         <p className="text-sm text-[var(--muted-foreground)]">
           {getGreeting()}, welcome back.
         </p>
-        <h1 className="mt-1 text-2xl font-bold text-[var(--foreground)] sm:text-3xl">
-          Your preparation dashboard
-        </h1>
+        <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
+          <h1 className="text-2xl font-bold text-[var(--foreground)] sm:text-3xl">
+            Your preparation dashboard
+          </h1>
+          <button
+            type="button"
+            onClick={() => refreshProgress()}
+            disabled={loading}
+            className="rounded-lg border border-[var(--border)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--foreground)] hover:bg-[var(--muted)] disabled:opacity-50"
+          >
+            {loading ? "Loading…" : "Refresh"}
+          </button>
+        </div>
 
         {loading ? (
           <p className="mt-6 text-sm text-[var(--muted-foreground)]">Loading…</p>

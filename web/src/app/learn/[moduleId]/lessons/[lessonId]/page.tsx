@@ -14,10 +14,12 @@ import {
   type QuizResultOut,
 } from "@/lib/api";
 import { ContentWithMath } from "@/components/ContentWithMath";
+import { useProgress } from "@/contexts/ProgressContext";
 
 export default function LessonPage() {
   const params = useParams();
   const router = useRouter();
+  const { refreshProgress } = useProgress();
   const moduleId = params.moduleId as string;
   const lessonId = params.lessonId as string;
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -76,6 +78,7 @@ export default function LessonPage() {
     try {
       await progressApi.completeLesson(lessonId);
       setLessonCompleted(true);
+      refreshProgress();
       if (chapterQuiz && quizQuestions.length > 0) {
         setQuizModalOpen(true);
       }
